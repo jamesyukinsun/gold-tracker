@@ -166,15 +166,26 @@ function sparkline(values, w, h, color){
 
 /* Multi-series line chart for the weekly COT net-positioning series.
 
+   series is [{name, color, pts:[[label, value], ...]}] — the same shape the
+   static dashboard's lineChart takes. The points are label/value PAIRS, not
+   bare numbers: pushing pts[i] itself into the y-scale yields NaN for every
+   coordinate, which renders a polyline with points="NaN,NaN ..." and draws
+   nothing at all. That is a silent blank chart rather than an error, so the
+   shape is asserted here rather than assumed.
+
    All four groups share one y-scale on purpose: swap dealers are structurally
    short by an order of magnitude more than anyone else, and that asymmetry IS
    the story. A per-series scale would normalise it away. Text lives in HTML
    around the SVG, not inside it, so the viewBox scaling cannot distort it. */
 function multiLine(series, W, H, yfmt){
   const all = [];
-  series.forEach(s=>s.pts.forEach(v=>all.push(v)));
+  series.forEach(s=>(s.pts||[]).forEach(p=>{
+    const v = Array.isArray(p) ? p[1] : p;
+    if(typeof v === 'number' && isFinite(v)) all.push(v);
+  }));
   if(!all.length) return '';
   let lo = Math.min(...all), hi = Math.max(...all);
+  if(!isFinite(lo) || !isFinite(hi)) return '';
   const sp = (hi-lo)||1; lo -= sp*0.06; hi += sp*0.06;
   const padR = 56, padL = 2;
   const N = Math.max(...series.map(s=>s.pts.length));
@@ -194,11 +205,16 @@ function multiLine(series, W, H, yfmt){
          y.toFixed(1)+'" stroke="#3d4a63" stroke-width="1" stroke-dasharray="3 3"/>';
   }
   series.forEach(s=>{
-    const pts = s.pts.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ');
+    const pts = s.pts.map((p,i)=>{
+      const v = Array.isArray(p) ? p[1] : p;
+      return X(i).toFixed(1)+','+Y(v).toFixed(1);
+    }).join(' ');
     g += '<polyline points="'+pts+'" fill="none" stroke="'+s.color+
-         '" stroke-width="1.8" stroke-linejoin="round"/>';
+         '" stroke-width="1.8" stroke-linejoin="round" '+
+         'vector-effect="non-scaling-stroke"/>';
   });
-  return '<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+g+'</svg>';
+  return '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" '+
+         'style="height:'+H+'px">'+g+'</svg>';
 }
 
 /* Spot 1-minute chart.
@@ -458,8 +474,11 @@ function render(D){
       const nser=ndefs.filter(d=>NH[d[0]]&&NH[d[0]].length)
         .map(d=>({name:d[1],color:d[2],pts:NH[d[0]]}));
       if(nser.length){
+        const p0=nser[0].pts[0], p1=nser[0].pts[nser[0].pts.length-1];
+        const d0=esc(String(Array.isArray(p0)?p0[0]:'').slice(0,10));
+        const d1=esc(String(Array.isArray(p1)?p1[0]:'').slice(0,10));
         qh+='<div class="sub" style="margin:13px 0 5px">Large-trader net positioning '+
-          '— '+nser[0].pts.length+' weekly reports</div>';
+          '— '+nser[0].pts.length+' weekly reports, '+d0+' to '+d1+'</div>';
         qh+=multiLine(nser, 1000, 165, v=>i0(v/1000)+'k');
         qh+='<div class="lg">'+nser.map(s=>
           '<span><i style="background:'+s.color+'"></i>'+esc(s.name)+'</span>')

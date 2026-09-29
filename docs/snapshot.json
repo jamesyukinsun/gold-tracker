@@ -1,48 +1,48 @@
 {
- "generated_at": "2026-09-29T22:38:21.287896+00:00",
+ "generated_at": "2026-09-29T22:42:44.684239+00:00",
  "cot_basis": "combined",
  "basis": {
-  "basis_usd": 35.399805000000015,
-  "comex": 4214.1,
-  "spot": 4178.700195
+  "basis_usd": 32.899805000000015,
+  "comex": 4212.1,
+  "spot": 4179.200195
  },
  "bullion": {
   "COMEX": {
-   "usd_oz": 4214.1,
-   "native": 4214.1,
+   "usd_oz": 4212.1,
+   "native": 4212.1,
    "unit": "USD/oz",
-   "ts": "2026-09-29T22:27:32+00:00",
-   "change_pct": -1.9520707305723508,
+   "ts": "2026-09-29T22:32:02+00:00",
+   "change_pct": -1.9986040018613225,
    "venue": "COMEX",
    "note": "real-time-ish (~seconds-minutes)"
   },
   "COMEX_MICRO": {
-   "usd_oz": 4214.0,
-   "native": 4214.0,
+   "usd_oz": 4212.2,
+   "native": 4212.2,
    "unit": "USD/oz",
-   "ts": "2026-09-29T22:27:58+00:00",
-   "change_pct": -1.1980961759396112,
+   "ts": "2026-09-29T22:32:27+00:00",
+   "change_pct": -1.2402991723523609,
    "venue": "COMEX_MICRO",
    "note": "real-time-ish (~seconds-minutes)"
   },
   "SPOT": {
-   "usd_oz": 4178.700195,
-   "native": 4178.700195,
+   "usd_oz": 4179.200195,
+   "native": 4179.200195,
    "unit": "USD/oz",
-   "ts": "2026-09-29T22:38:11+00:00",
+   "ts": "2026-09-29T22:42:41+00:00",
    "change_pct": null,
    "venue": "SPOT",
    "note": "live spot"
   },
   "SGE": {
-   "usd_oz": 4165.0583412613205,
+   "usd_oz": 4167.421071596578,
    "native": 897.53,
    "unit": "CNY/gram",
    "ts": "2026-09-29T15:30:00+08:00",
    "change_pct": null,
    "venue": "SGE",
    "note": "Au99.99 physical",
-   "fx_cny": 6.702500000000001
+   "fx_cny": 6.6987
   },
   "LBMA_PM": {
    "usd_oz": 4144.55,
@@ -62,7 +62,7 @@
    "unit": "CNY",
    "currency": "CNY",
    "ts": "2026-09-29T07:00:01+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195255+00:00",
+   "fetched_at": "2026-09-29T22:42:44.856922+00:00",
    "volume": 377557858,
    "open_interest": null,
    "change_pct": -3.837904955412573,
@@ -77,7 +77,7 @@
    "unit": "JPY",
    "currency": "JPY",
    "ts": "2026-09-29T06:30:00+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195375+00:00",
+   "fetched_at": "2026-09-29T22:42:44.857094+00:00",
    "volume": 433289,
    "open_interest": null,
    "change_pct": -5.308880308880308,
@@ -92,7 +92,7 @@
    "unit": "HKD",
    "currency": "HKD",
    "ts": "2026-09-29T08:08:03+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195456+00:00",
+   "fetched_at": "2026-09-29T22:42:44.857189+00:00",
    "volume": 55498,
    "open_interest": null,
    "change_pct": -3.9329464861379755,
@@ -107,7 +107,7 @@
    "unit": "INR",
    "currency": "INR",
    "ts": "2026-09-29T10:00:00+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195531+00:00",
+   "fetched_at": "2026-09-29T22:42:44.857271+00:00",
    "volume": 28605212,
    "open_interest": null,
    "change_pct": -3.2790828188888024,
@@ -122,7 +122,7 @@
    "unit": "USD",
    "currency": "USD",
    "ts": "2026-09-29T20:00:00+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195601+00:00",
+   "fetched_at": "2026-09-29T22:42:44.857393+00:00",
    "volume": 7901795,
    "open_interest": null,
    "change_pct": -4.294248506511362,
@@ -137,7 +137,7 @@
    "unit": "USD",
    "currency": "USD",
    "ts": "2026-09-29T20:00:00+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195668+00:00",
+   "fetched_at": "2026-09-29T22:42:44.857493+00:00",
    "volume": 3552884,
    "open_interest": null,
    "change_pct": -4.278922345483366,
@@ -152,7 +152,7 @@
    "unit": "USD",
    "currency": "USD",
    "ts": "2026-09-29T20:00:00+00:00",
-   "fetched_at": "2026-09-29T22:38:22.195733+00:00",
+   "fetched_at": "2026-09-29T22:42:44.857584+00:00",
    "volume": 5956900,
    "open_interest": null,
    "change_pct": -4.274296304876633,
@@ -162,13 +162,13 @@
   }
  ],
  "dispersion": {
-  "high_venue": "COMEX",
-  "high": 4214.1,
+  "high_venue": "COMEX_MICRO",
+  "high": 4212.2,
   "low_venue": "SGE",
-  "low": 4165.0583412613205,
-  "spread_usd": 49.04165873867987,
-  "spread_pct": 1.1696177530391196,
-  "mid": 4192.964634065331,
+  "low": 4167.421071596578,
+  "spread_usd": 44.77892840342156,
+  "spread_pct": 1.0680135620840299,
+  "mid": 4192.730316649145,
   "lbma_pm": 4144.55,
   "live_venues": [
    "COMEX",
@@ -177,10 +177,10 @@
    "SPOT"
   ],
   "venues": {
-   "COMEX": 4214.1,
-   "COMEX_MICRO": 4214.0,
-   "SPOT": 4178.7,
-   "SGE": 4165.06
+   "COMEX": 4212.1,
+   "COMEX_MICRO": 4212.2,
+   "SPOT": 4179.2,
+   "SGE": 4167.42
   }
  },
  "premium": {
@@ -262,7 +262,7 @@
  "tape": {
   "symbol": "GC=F",
   "typical_volume": 76.0,
-  "session_volume": 121986.0,
+  "session_volume": 122104.0,
   "spikes": [
    {
     "ts": "2026-09-29T18:00:00+00:00",
