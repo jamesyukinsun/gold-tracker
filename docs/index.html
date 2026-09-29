@@ -26,14 +26,25 @@
            font-variant-numeric:tabular-nums}
   .px .ccy{font-size:12px;color:var(--dim);font-weight:400}
   .grid{display:grid;gap:15px}
-  .g2{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+  /* min(420px,100%) not 420px: a bare 420px floor makes the column wider than
+     a phone viewport, which pushes the whole document sideways. */
+  .g2{grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))}
   .panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;
          padding:15px 17px;margin-bottom:15px}
+  /* Any table may be wrapped in .tw so a wide grid scrolls inside its own
+     panel instead of dragging the page off the screen. */
+  .tw{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .tw.wide table{min-width:max-content}
   table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
   th{text-align:left;color:var(--dim2);font-weight:600;font-size:10px;
      text-transform:uppercase;letter-spacing:.07em;padding:5px 8px;
      border-bottom:1px solid var(--line);white-space:nowrap}
-  td{padding:6px 8px;border-bottom:1px solid rgba(35,44,61,.45);white-space:nowrap}
+  /* Cells wrap by default; a label column that cannot shrink is what pushed
+     numeric columns off the edge. Only the positioning grid is pinned. */
+  td{padding:6px 8px;border-bottom:1px solid rgba(35,44,61,.45)}
+  table.nw td{white-space:nowrap}
+  .u{color:var(--dim2);font-size:10px;white-space:nowrap}
+  .sm{display:none}
   tr:last-child td{border-bottom:none}
   td.r,th.r{text-align:right}
   .up{color:var(--up)} .down{color:var(--down)} .gold{color:var(--gold)}
@@ -57,6 +68,25 @@
   footer{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
          color:var(--dim2);font-size:11.5px;line-height:1.7}
   code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:11.5px}
+  @media (max-width:560px){
+    body{padding:14px 12px 38px}
+    h1{font-size:18px}
+    .px .big{font-size:26px;letter-spacing:-.9px}
+    .panel{padding:13px 13px;border-radius:9px}
+    td,th{padding:6px 6px}
+    .sub{font-size:11px}
+    /* Raw long/short are the least useful columns on a phone and the reason
+       the grid needed sideways scrolling. Net, weekly change, z and
+       percentile are what the panel is actually for, and they fit. */
+    .c-ls{display:none}
+    /* Abbreviate the two widest headers so the remaining columns fit inside
+       a 360px phone without sideways scrolling. */
+    .lg{display:none}
+    .sm{display:inline}
+  }
+  @media (max-width:420px){
+    td,th{padding:5px 3px}
+  }
 </style></head><body>
 
 <div class="top">
@@ -160,13 +190,13 @@ async function loadLbma(){
   renderSpotBench();
 }
 function renderSpotBench(){
-  let h = '<table>';
+  let h = '<div class="tw"><table>';
   const sp = $('spot').textContent.replace(/[^\d.]/g,'');
   if(sp) h += '<tr><td>Spot XAU/USD</td><td class="r mono gold">'+n(parseFloat(sp))+
               '</td><td class="r dim2">live</td></tr>';
   if(lbma) h += '<tr><td>LBMA Gold Price (PM auction)</td><td class="r mono">'+
                 n(lbma.usd)+'</td><td class="r dim2">'+esc(lbma.date)+'</td></tr>';
-  h += '</table>';
+  h += '</table></div>';
   h += '<div class="note">The London benchmark is fixed twice a day by auction, so a '+
        'same-day figure is correct, not stale. Everything on this page is fetched by '+
        'your browser directly from the source — there is no server in between.</div>';
@@ -190,9 +220,13 @@ async function loadCftc(){
     '</b> · released Friday 15:30 ET · open interest <b>'+i0(oi)+
     ' contracts</b> · '+(latest.traders_tot_all||'?')+' reporting traders</div>';
 
-  h += '<table><tr><th>Group</th><th class="r">Long</th><th class="r">Short</th>'+
-       '<th class="r">Net</th><th class="r">&#916; week</th><th class="r">Z (3y)</th>'+
-       '<th class="r">Percentile</th></tr>';
+  let t = '<table class="nw"><tr><th>Group</th>'+
+       '<th class="r c-ls">Long</th><th class="r c-ls">Short</th>'+
+       '<th class="r">Net</th>'+
+       '<th class="r"><span class="lg">&#916; week</span>'+
+       '<span class="sm">&#916; wk</span></th><th class="r">Z (3y)</th>'+
+       '<th class="r"><span class="lg">Percentile</span>'+
+       '<span class="sm">Pctl</span></th></tr>';
   const series = {};
   GROUPS.forEach(g=>{
     const net = rows.map(rr => (+rr[g.L]||0) - (+rr[g.S]||0));
@@ -201,15 +235,16 @@ async function loadCftc(){
     const z = zscore(net, cur), p = pctile(net, cur);
     const crowding = p>=90 ? ' <span class="down" title="crowded">&#9650;</span>'
                     : p<=10 ? ' <span class="up" title="washed out">&#9660;</span>' : '';
-    h += '<tr><td>'+esc(g.label)+crowding+'</td>'+
-      '<td class="r mono">'+i0(latest[g.L])+'</td>'+
-      '<td class="r mono">'+i0(latest[g.S])+'</td>'+
+    t += '<tr><td>'+esc(g.label)+crowding+'</td>'+
+      '<td class="r mono c-ls">'+i0(latest[g.L])+'</td>'+
+      '<td class="r mono c-ls">'+i0(latest[g.S])+'</td>'+
       '<td class="r mono '+(cur>0?'up':'down')+'">'+sgn(cur,0)+'</td>'+
       '<td class="r mono '+cls(cur-pv)+'">'+sgn(cur-pv,0)+'</td>'+
       '<td class="r mono">'+sgn(z)+'</td>'+
       '<td class="r mono">'+p.toFixed(0)+'%</td></tr>';
   });
-  h += '</table>';
+  t += '</table>';
+  h += '<div class="tw wide">'+t+'</div>';
   h += '<div class="note"><b>Net</b> = outright long &#8722; short. <b>Z</b> and '+
     '<b>percentile</b> are computed in your browser over the '+(rows.length)+
     ' weekly reports fetched here — a percentile above ~90 or below ~10 means '+
@@ -288,12 +323,13 @@ function renderBaked(D){
   let h='<div class="sub" style="margin-bottom:10px">captured <b>'+
     esc((D.generated_at||'').replace('T',' ').slice(0,19))+' UTC</b> by the python '+
     'tool in this repo</div>';
-  h+='<table>';
+  h+='<div class="tw"><table>';
   [['COMEX','Gold futures (GC)'],['SPOT','Spot XAU/USD'],
    ['SGE','Shanghai Au99.99'],['LBMA_PM','London PM auction']].forEach(([k,lab])=>{
     const b=B[k]; if(!b) return;
-    const px = b.usd_oz!=null ? n(b.usd_oz)+' USD/oz'
-             : (b.native!=null ? n(b.native)+' '+esc(b.unit||'') : '—');
+    const px = b.usd_oz!=null ? n(b.usd_oz)+'<span class="u"> USD/oz</span>'
+             : (b.native!=null ? n(b.native)+'<span class="u"> '+
+                esc(b.unit||'')+'</span>' : '—');
     h+='<tr><td>'+lab+'</td><td class="r mono gold">'+px+'</td></tr>';
   });
   if(BX) h+='<tr><td>COMEX basis over spot</td><td class="r mono">'+
@@ -301,13 +337,15 @@ function renderBaked(D){
   if(P) h+='<tr><td>Shanghai premium vs implied spot</td><td class="r mono '+
     cls(P.premium_usd)+'">'+sgn(P.premium_usd)+'</td></tr>';
   if(E) h+='<tr><td>ETF tonnage held</td><td class="r mono">'+n(E.total_tonnes,1)+
-    ' t <span class="dim2">('+sgn(E.wow_tonnes,2)+' t wow)</span></td></tr>';
+    '<span class="u"> t</span><br><span class="u">'+sgn(E.wow_tonnes,2)+
+    ' t wow</span></td></tr>';
   if(T) h+='<tr><td>Tape anomalies (session)</td><td class="r mono">'+
     (T.flagged_count||0)+'</td></tr>';
   if(D.index && D.index.score!=null) h+='<tr><td>Big-player pressure index</td>'+
-    '<td class="r mono gold">'+Math.round(D.index.score)+'/100 '+
-    '<span class="dim2">'+esc(D.index.label)+'</span></td></tr>';
-  h+='</table>';
+    '<td class="r mono gold">'+Math.round(D.index.score)+
+    '<span class="u">/100</span><br><span class="u">'+esc(D.index.label)+
+    '</span></td></tr>';
+  h+='</table></div>';
   h+='<div class="note">These venues publish no CORS header, so a browser page is '+
     'not allowed to read them directly — Yahoo (COMEX), sge.com.cn (Shanghai) and '+
     'gold.org (ETF tonnage) all block cross-origin reads. The values above were '+
