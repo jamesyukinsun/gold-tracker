@@ -344,7 +344,8 @@ def render_frame(snap: dict, width: int = 108, use_color: bool = True) -> list[s
     for name, f in feeds.items():
         st = f.get("state", "?")
         sc = {"live": "grn", "retrying": "yel", "down": "red",
-              "stale": "yel", "pending": "gry"}.get(st, "gry")
+              "stalled": "mag", "dead": "red", "stale": "yel",
+              "pending": "gry"}.get(st, "gry")
         line(f"   {name:<13} " + color(f"{st:<9}", sc, use_color)
              + f"{fmt_age(f.get('age_s')):>6} {fmt_age(f.get('interval')):>10}"
              f" {f.get('ok', 0):>6,} {f.get('err', 0):>6,} "

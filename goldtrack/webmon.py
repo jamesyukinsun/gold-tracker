@@ -446,8 +446,8 @@ function render(D){
   const F=D.feeds||{};
   Object.keys(F).forEach(k=>{
     const f=F[k];
-    const col = f.state==='live'?'var(--up)':f.state==='down'?'var(--down)':
-                f.state==='pending'?'var(--dim2)':'var(--warn)';
+    const col = f.state==='live'?'var(--up)':(f.state==='down'||f.state==='dead')?
+                'var(--down)':f.state==='pending'?'var(--dim2)':'var(--warn)';
     fh+='<tr><td>'+esc(f.label||k)+'</td><td><span class="dot" style="background:'+
       col+'"></span><span style="color:'+col+'">'+esc(f.state)+'</span></td>'+
       '<td class="r mono">'+age(f.age_s)+'</td><td class="r dim2">'+
@@ -557,11 +557,16 @@ def make_handler(engine: LiveEngine, refresh: int, page: bytes):
             if path == "/health":
                 snap = engine.snapshot()
                 feeds = snap.get("feeds") or {}
-                bad = [k for k, f in feeds.items() if f.get("state") != "live"]
+                # Health means "broken", not "slow": a feed on a 30-minute
+                # cadence is not unhealthy between polls.
+                bad = [k for k, f in feeds.items() if not f.get("healthy", True)]
+                stalled = [k for k, f in feeds.items() if f.get("state") == "stalled"]
                 txt = (f"ok={not bad} uptime={snap['uptime_s']:.0f}s "
                        f"ticks={snap['tick_count']} alerts={snap['alert_count']} "
-                       f"feeds_live={len(feeds)-len(bad)}/{len(feeds)}"
-                       + (f" degraded={','.join(bad)}" if bad else "") + "\n")
+                       f"feeds_healthy={len(feeds)-len(bad)}/{len(feeds)}"
+                       + (f" unhealthy={','.join(bad)}" if bad else "")
+                       + (f" stalled={','.join(stalled)}"
+                          if stalled and not bad else "") + "\n")
                 return self._send(200 if not bad else 503, txt.encode(),
                                   "text/plain; charset=utf-8")
             self._send(404, b'{"error":"not found"}', "application/json")

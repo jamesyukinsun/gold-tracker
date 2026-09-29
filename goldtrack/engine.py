@@ -67,28 +67,56 @@ class FeedStatus:
     latency_ms: float = 0.0
     consecutive_errors: int = 0
     payload_note: str = ""
-
-    @property
-    def healthy(self) -> bool:
-        return self.consecutive_errors == 0
+    thread_alive: bool = True
 
     def age_s(self) -> float | None:
+        """Seconds since the last SUCCESSFUL poll."""
         if not self.last_ok:
             return None
         return (dt.datetime.now(UTC) - self.last_ok).total_seconds()
 
+    def attempt_age_s(self) -> float | None:
+        """Seconds since the poller last STARTED an attempt.
+
+        This is the load-bearing diagnostic: `last_attempt` is stamped at the
+        top of every loop iteration, so if this keeps growing the loop itself
+        has stopped cycling, even though the thread may still be alive and
+        stuck inside a call.
+        """
+        if not self.last_attempt:
+            return None
+        return (dt.datetime.now(UTC) - self.last_attempt).total_seconds()
+
+    @property
+    def healthy(self) -> bool:
+        """Broken, not merely slow. This drives /health, so it must never fire
+        just because a feed has a long cadence."""
+        if not self.thread_alive:
+            return False
+        if self.consecutive_errors >= 3:
+            return False
+        a = self.attempt_age_s()
+        if a is None:
+            return True                     # has not started yet
+        # The loop should begin an attempt every `interval`. Missing several
+        # cycles in a row means it is wedged, whatever the thread reports.
+        return a <= self.interval * 3 + 120
+
     def state(self) -> str:
         if self.last_ok is None and self.last_attempt is None:
             return "pending"
-        if self.consecutive_errors == 0:
-            age = self.age_s() or 0
-            # A feed is "stale" only if it has missed several of its own cycles.
-            if age > self.interval * 3 + 5:
-                return "stale"
-            return "live"
+        if not self.thread_alive:
+            return "dead"
         if self.consecutive_errors >= 3:
             return "down"
-        return "retrying"
+        if self.consecutive_errors > 0:
+            return "retrying"
+        a = self.attempt_age_s() or 0
+        if a > self.interval * 3 + 120:
+            return "stalled"                # loop not cycling
+        if (self.age_s() or 0) > self.interval * 3 + 5:
+            return "stale"                  # cycling but nothing new came back
+        return "live"
 
 
 # --------------------------------------------------------------------- state
@@ -331,35 +359,41 @@ class LiveEngine:
             return
 
         backoff = 0.0
-        while not self.stop_event.is_set():
-            t0 = time.perf_counter()
+        try:
+            while not self.stop_event.is_set():
+                t0 = time.perf_counter()
+                with st.lock:
+                    status.last_attempt = dt.datetime.now(UTC)
+                try:
+                    note = fn()
+                    dt_ms = (time.perf_counter() - t0) * 1000.0
+                    with st.lock:
+                        status.last_ok = dt.datetime.now(UTC)
+                        status.ok_count += 1
+                        status.latency_ms = dt_ms
+                        status.consecutive_errors = 0
+                        status.last_error = None
+                        status.payload_note = note or ""
+                        st.tick_count += 1
+                    backoff = 0.0
+                    delay = interval
+                except Exception as e:  # noqa: BLE001 - a feed thread must never die
+                    with st.lock:
+                        status.err_count += 1
+                        status.consecutive_errors += 1
+                        status.last_error = f"{type(e).__name__}: {e}"
+                        st.errors[name] = status.last_error
+                    backoff = min((backoff * 2) if backoff else interval, 300.0)
+                    delay = max(interval, backoff)
+                    if self.verbose:
+                        print(f"  ! feed {name}: {status.last_error}")
+                if self.stop_event.wait(delay):
+                    return
+        finally:
+            # Marked on every exit path so a thread that dies unexpectedly shows
+            # up as "dead" rather than silently freezing at its last good state.
             with st.lock:
-                status.last_attempt = dt.datetime.now(UTC)
-            try:
-                note = fn()
-                dt_ms = (time.perf_counter() - t0) * 1000.0
-                with st.lock:
-                    status.last_ok = dt.datetime.now(UTC)
-                    status.ok_count += 1
-                    status.latency_ms = dt_ms
-                    status.consecutive_errors = 0
-                    status.last_error = None
-                    status.payload_note = note or ""
-                    st.tick_count += 1
-                backoff = 0.0
-                delay = interval
-            except Exception as e:  # noqa: BLE001 - a feed thread must never die
-                with st.lock:
-                    status.err_count += 1
-                    status.consecutive_errors += 1
-                    status.last_error = f"{type(e).__name__}: {e}"
-                    st.errors[name] = status.last_error
-                backoff = min((backoff * 2) if backoff else interval, 300.0)
-                delay = max(interval, backoff)
-                if self.verbose:
-                    print(f"  ! feed {name}: {status.last_error}")
-            if self.stop_event.wait(delay):
-                return
+                status.thread_alive = False
 
     # ------------------------------------------------------------ derivation
     def derive(self) -> None:
@@ -487,6 +521,26 @@ class LiveEngine:
                              f"{fs.consecutive_errors} consecutive failures "
                              f"({fs.last_error or 'unknown error'})"),
                     detail={"feed": name, "errors": fs.consecutive_errors}))
+            if not fs.thread_alive:
+                out.append(alerts_mod.Alert(
+                    code=f"feed_dead_{name}", level="CRITICAL",
+                    message=(f"Feed '{fs.label or name}' poller thread has exited. "
+                             f"It will not recover without a restart."),
+                    detail={"feed": name}))
+                continue
+            # Alive but not cycling: the thread is wedged inside a call it cannot
+            # return from. Distinguished from slow, which is normal.
+            a = fs.attempt_age_s()
+            if (fs.consecutive_errors == 0 and a is not None
+                    and a > fs.interval * 3 + 120):
+                out.append(alerts_mod.Alert(
+                    code=f"feed_stalled_{name}", level="NOTABLE",
+                    message=(f"Feed '{fs.label or name}' is stalled: no poll "
+                             f"attempt for {a/60:.0f} min on a "
+                             f"{fs.interval/60:.0f} min cadence. The thread is "
+                             f"alive but its loop has stopped cycling."),
+                    detail={"feed": name, "attempt_age_s": a,
+                            "interval": fs.interval}))
 
         # Shanghai publishes completed sessions, so its print legitimately lags.
         # Say so plainly rather than letting a stale number look live.
@@ -627,6 +681,9 @@ class LiveEngine:
         st = self.state
         with st.lock:
             feeds = {k: {"state": v.state(), "age_s": v.age_s(),
+                         "attempt_age_s": v.attempt_age_s(),
+                         "healthy": v.healthy,
+                         "thread_alive": v.thread_alive,
                          "ok": v.ok_count, "err": v.err_count,
                          "latency_ms": v.latency_ms, "interval": v.interval,
                          "label": v.label, "note": v.payload_note,
