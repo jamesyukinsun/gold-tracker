@@ -1,0 +1,28 @@
+# ---------------------------------------------------------------- local state
+# The live monitor writes a tick record, HTTP cache, logs and generated HTML.
+# None of that belongs in the repo: it is machine-specific and regenerated.
+data/
+dashboard.html
+*.jsonl
+
+# ------------------------------------------------------------------- python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ------------------------------------------------------------------- editors
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+
+# ------------------------------------------------------------------ keep these
+!docs/
+!docs/*.png

@@ -1,0 +1,12 @@
+# Normalise text on commit, but check out Windows batch files with CRLF.
+# cmd.exe misparses LF-only .cmd files (it eats leading characters: `setlocal`
+# runs as `tlocal`), so the launcher must keep its CRLF line endings.
+* text=auto
+
+*.cmd text eol=crlf
+*.bat text eol=crlf
+
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
