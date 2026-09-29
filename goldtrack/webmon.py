@@ -16,6 +16,7 @@ Endpoints:
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import threading
 import time
@@ -116,6 +117,12 @@ PAGE = r"""<!DOCTYPE html>
 
 <script>
 const REFRESH = __REFRESH__;
+/* Fingerprint of the code this document was built from. Panel logic lives in
+   this inline script, so a tab loaded before a fix keeps running the old code
+   forever — the timed poll only refreshes DATA, never the page. Comparing this
+   against what the server reports lets a stale document notice and reload
+   itself, instead of showing a chart that looks broken when the server is fine. */
+const BUILD = "__BUILD__";
 let prev = {};
 
 function n(x,d=2){ if(x==null||isNaN(x))return '—';
@@ -573,6 +580,12 @@ async function tick(){
     const r = await fetch('/api/snapshot',{cache:'no-store'});
     if(!r.ok) throw new Error('HTTP '+r.status);
     const D = await r.json();
+    if(D.build && BUILD !== "__BUILD__" && D.build !== BUILD){
+      // The server is running newer code than this document. Reload rather
+      // than keep rendering with stale logic.
+      location.reload();
+      return;
+    }
     render(D);
     lastOk = Date.now();
     const c=document.getElementById('conn');
@@ -600,7 +613,7 @@ setInterval(function(){
 """
 
 
-def make_handler(engine: LiveEngine, refresh: int, page: bytes):
+def make_handler(engine: LiveEngine, refresh: int, page: bytes, build: str = ""):
     class Handler(BaseHTTPRequestHandler):
         server_version = "goldtrack-live"
 
@@ -625,6 +638,9 @@ def make_handler(engine: LiveEngine, refresh: int, page: bytes):
                 return self._send(200, page, "text/html; charset=utf-8")
             if path == "/api/snapshot":
                 snap = jsonable(engine.snapshot())
+                # Lets an already-loaded page detect that the server is now
+                # running code newer than the document it is executing.
+                snap["build"] = build
                 return self._send(200, json.dumps(snap, default=str).encode(),
                                   "application/json")
             if path == "/api/alerts":
@@ -667,9 +683,14 @@ class _Server(ThreadingHTTPServer):
 
 def serve(engine: LiveEngine, host: str = "127.0.0.1", port: int = 8787,
           refresh: int = 3, open_browser: bool = False) -> None:
-    page = PAGE.replace("__REFRESH__", str(max(1, refresh))).encode("utf-8")
+    # Fingerprint the template plus the refresh interval: stable while the code
+    # is unchanged, and different the moment it is not.
+    build = hashlib.sha1((PAGE + str(max(1, refresh))).encode("utf-8")
+                         ).hexdigest()[:8]
+    page = (PAGE.replace("__REFRESH__", str(max(1, refresh)))
+                .replace("__BUILD__", build)).encode("utf-8")
     try:
-        httpd = _Server((host, port), make_handler(engine, refresh, page))
+        httpd = _Server((host, port), make_handler(engine, refresh, page, build))
     except OSError as e:
         print(f"\n  Cannot bind {host}:{port} — {e}")
         print(f"  Another monitor is probably already running there.")
