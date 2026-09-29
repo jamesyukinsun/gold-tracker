@@ -88,6 +88,22 @@ class FeedStatus:
         return (dt.datetime.now(UTC) - self.last_attempt).total_seconds()
 
     @property
+    def stall_after_s(self) -> float:
+        """Seconds with no poll attempt that mean wedged, not slow.
+
+        attempt_age peaks at roughly `interval` on a healthy feed, because the
+        timestamp is stamped at the top of every iteration before the fetch.
+        So 1.5 cycles plus a minute of slack is clear of normal operation, and
+        unlike a fixed multiple it scales with the cadence.
+
+        This lives in one place on purpose: it previously appeared as the
+        literal `interval * 3 + 120` in healthy, in state(), and again in the
+        alert rule, so the three could drift apart. At that value a wedged
+        30-minute feed went unnoticed for 92 minutes.
+        """
+        return self.interval * 1.5 + 60
+
+    @property
     def healthy(self) -> bool:
         """Broken, not merely slow. This drives /health, so it must never fire
         just because a feed has a long cadence."""
@@ -98,9 +114,9 @@ class FeedStatus:
         a = self.attempt_age_s()
         if a is None:
             return True                     # has not started yet
-        # The loop should begin an attempt every `interval`. Missing several
-        # cycles in a row means it is wedged, whatever the thread reports.
-        return a <= self.interval * 3 + 120
+        # The loop should begin an attempt every `interval`. Missing more than
+        # a cycle means it is wedged, whatever the thread reports.
+        return a <= self.stall_after_s
 
     def state(self) -> str:
         if self.last_ok is None and self.last_attempt is None:
@@ -111,10 +127,9 @@ class FeedStatus:
             return "down"
         if self.consecutive_errors > 0:
             return "retrying"
-        a = self.attempt_age_s() or 0
-        if a > self.interval * 3 + 120:
+        if (self.attempt_age_s() or 0) > self.stall_after_s:
             return "stalled"                # loop not cycling
-        if (self.age_s() or 0) > self.interval * 3 + 5:
+        if (self.age_s() or 0) > self.stall_after_s:
             return "stale"                  # cycling but nothing new came back
         return "live"
 
@@ -532,7 +547,7 @@ class LiveEngine:
             # return from. Distinguished from slow, which is normal.
             a = fs.attempt_age_s()
             if (fs.consecutive_errors == 0 and a is not None
-                    and a > fs.interval * 3 + 120):
+                    and a > fs.stall_after_s):
                 out.append(alerts_mod.Alert(
                     code=f"feed_stalled_{name}", level="NOTABLE",
                     message=(f"Feed '{fs.label or name}' is stalled: no poll "
@@ -686,6 +701,7 @@ class LiveEngine:
                          "thread_alive": v.thread_alive,
                          "ok": v.ok_count, "err": v.err_count,
                          "latency_ms": v.latency_ms, "interval": v.interval,
+                         "stall_after_s": v.stall_after_s,
                          "label": v.label, "note": v.payload_note,
                          "last_error": v.last_error,
                          "consecutive_errors": v.consecutive_errors}
