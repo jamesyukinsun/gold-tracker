@@ -44,7 +44,10 @@
   td{padding:6px 8px;border-bottom:1px solid rgba(35,44,61,.45)}
   table.nw td{white-space:nowrap}
   .u{color:var(--dim2);font-size:10px;white-space:nowrap}
-  .sm{display:none}
+  /* Header-abbreviation spans. Deliberately NOT named .lg/.sm: .lg is the
+     chart legend, and reusing it meant the narrow-screen rule below hid the
+     legend along with the long column headers. */
+  .h-sm{display:none}
   tr:last-child td{border-bottom:none}
   td.r,th.r{text-align:right}
   .up{color:var(--up)} .down{color:var(--down)} .gold{color:var(--gold)}
@@ -62,6 +65,12 @@
         margin-bottom:15px}
   .lg{display:flex;gap:14px;flex-wrap:wrap;color:var(--dim);font-size:11px;margin-top:8px}
   .lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+  /* Axis labels live in HTML beside the plot, not as SVG text. The SVG is
+     scaled to the container width, which shrank 10px text to about 3px on a
+     phone; HTML keeps its size at every width. */
+  .yax{position:relative;width:36px;flex:none}
+  .yax span{position:absolute;right:0;transform:translateY(-50%);
+            font-size:10px;color:var(--dim2);white-space:nowrap}
   .bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:5px}
   .bar span{display:block;height:100%;border-radius:3px}
   svg{display:block;width:100%;overflow:visible}
@@ -80,9 +89,10 @@
        percentile are what the panel is actually for, and they fit. */
     .c-ls{display:none}
     /* Abbreviate the two widest headers so the remaining columns fit inside
-       a 360px phone without sideways scrolling. */
-    .lg{display:none}
-    .sm{display:inline}
+       a 360px phone without sideways scrolling. Scoped to .h-lg/.h-sm so this
+       never touches the chart legend. */
+    .h-lg{display:none}
+    .h-sm{display:inline}
   }
   @media (max-width:420px){
     td,th{padding:5px 3px}
@@ -223,10 +233,10 @@ async function loadCftc(){
   let t = '<table class="nw"><tr><th>Group</th>'+
        '<th class="r c-ls">Long</th><th class="r c-ls">Short</th>'+
        '<th class="r">Net</th>'+
-       '<th class="r"><span class="lg">&#916; week</span>'+
-       '<span class="sm">&#916; wk</span></th><th class="r">Z (3y)</th>'+
-       '<th class="r"><span class="lg">Percentile</span>'+
-       '<span class="sm">Pctl</span></th></tr>';
+       '<th class="r"><span class="h-lg">&#916; week</span>'+
+       '<span class="h-sm">&#916; wk</span></th><th class="r">Z (3y)</th>'+
+       '<th class="r"><span class="h-lg">Percentile</span>'+
+       '<span class="h-sm">Pctl</span></th></tr>';
   const series = {};
   GROUPS.forEach(g=>{
     const net = rows.map(rr => (+rr[g.L]||0) - (+rr[g.S]||0));
@@ -262,7 +272,7 @@ async function loadCftc(){
 
 /* ------------------------------------------------------------- net-position */
 function drawChart(rows, series){
-  const W=1000, H=210, padL=6, padR=52;
+  const W=1000, H=210, padL=6, padR=6;
   const defs=[['managed_money','Managed money','var(--acc)'],
               ['swap_dealer','Swap dealers','var(--gold)'],
               ['prod_merc','Producer / merchant','var(--up)'],
@@ -275,14 +285,12 @@ function drawChart(rows, series){
   const X=i=>padL+(W-padL-padR)*(N>1?i/(N-1):.5);
   const Y=v=>10+(H-20)*(1-(v-lo)/(hi-lo));
   const NS='http://www.w3.org/2000/svg';
-  let s='';
+  let s='', labs=[];
   for(let g=0;g<=4;g++){
     const y=10+(H-20)*g/4;
     s+='<line x1="0" x2="'+W+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+
        '" stroke="var(--line)" stroke-width="1"/>';
-    const lab=hi-(hi-lo)*g/4;
-    s+='<text x="'+(W-4)+'" y="'+(y-3).toFixed(1)+'" fill="var(--dim2)" '+
-       'font-size="10" text-anchor="end">'+i0(lab/1000)+'k</text>';
+    labs.push({top:(y/H*100).toFixed(2), txt:i0((hi-(hi-lo)*g/4)/1000)+'k'});
   }
   if(lo<0&&hi>0){
     const y=Y(0);
@@ -292,11 +300,21 @@ function drawChart(rows, series){
   defs.forEach(d=>{
     const v=series[d[0]]; if(!v||!v.length) return;
     const pts=v.map((val,i)=>X(i).toFixed(1)+','+Y(val).toFixed(1)).join(' ');
+    // The viewBox is stretched to fill the box, so a plain stroke-width would
+    // be scaled by the horizontal fit and thin out on narrow screens.
     s+='<polyline points="'+pts+'" fill="none" stroke="'+d[2]+
-       '" stroke-width="1.8" stroke-linejoin="round"/>';
+       '" stroke-width="1.8" stroke-linejoin="round" '+
+       'vector-effect="non-scaling-stroke"/>';
   });
   $('chart-body').innerHTML =
-    '<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+s+'</svg>'+
+    '<div style="display:flex;gap:7px">'+
+      '<div style="flex:1;min-width:0">'+
+        '<svg viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="none" '+
+        'style="height:'+H+'px">'+s+'</svg></div>'+
+      '<div class="yax" style="height:'+H+'px">'+
+        labs.map(l=>'<span style="top:'+l.top+'%">'+l.txt+'</span>').join('')+
+      '</div>'+
+    '</div>'+
     '<div class="lg">'+defs.map(d=>'<span><i style="background:'+d[2]+'"></i>'+
       d[1]+'</span>').join('')+'</div>'+
     '<div class="note">Weekly, from <b>'+

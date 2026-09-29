@@ -164,6 +164,43 @@ function sparkline(values, w, h, color){
       stroke-width="1.6" stroke-linejoin="round"/></svg>`;
 }
 
+/* Multi-series line chart for the weekly COT net-positioning series.
+
+   All four groups share one y-scale on purpose: swap dealers are structurally
+   short by an order of magnitude more than anyone else, and that asymmetry IS
+   the story. A per-series scale would normalise it away. Text lives in HTML
+   around the SVG, not inside it, so the viewBox scaling cannot distort it. */
+function multiLine(series, W, H, yfmt){
+  const all = [];
+  series.forEach(s=>s.pts.forEach(v=>all.push(v)));
+  if(!all.length) return '';
+  let lo = Math.min(...all), hi = Math.max(...all);
+  const sp = (hi-lo)||1; lo -= sp*0.06; hi += sp*0.06;
+  const padR = 56, padL = 2;
+  const N = Math.max(...series.map(s=>s.pts.length));
+  const X = i => padL + (W-padL-padR)*(N>1 ? i/(N-1) : 0.5);
+  const Y = v => 8 + (H-16)*(1-(v-lo)/(hi-lo));
+  let g = '';
+  for(let k=0;k<=4;k++){
+    const y = 8 + (H-16)*k/4;
+    g += '<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y.toFixed(1)+'" y2="'+
+         y.toFixed(1)+'" stroke="var(--line)" stroke-width="1"/>';
+    g += '<text x="'+(W-padR+6)+'" y="'+(y+3).toFixed(1)+
+         '" fill="var(--dim2)" font-size="10">'+yfmt(hi-(hi-lo)*k/4)+'</text>';
+  }
+  if(lo < 0 && hi > 0){
+    const y = Y(0);
+    g += '<line x1="'+padL+'" x2="'+(W-padR)+'" y1="'+y.toFixed(1)+'" y2="'+
+         y.toFixed(1)+'" stroke="#3d4a63" stroke-width="1" stroke-dasharray="3 3"/>';
+  }
+  series.forEach(s=>{
+    const pts = s.pts.map((v,i)=>X(i).toFixed(1)+','+Y(v).toFixed(1)).join(' ');
+    g += '<polyline points="'+pts+'" fill="none" stroke="'+s.color+
+         '" stroke-width="1.8" stroke-linejoin="round"/>';
+  });
+  return '<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+g+'</svg>';
+}
+
 /* Spot 1-minute chart.
 
    Candlesticks are the wrong instrument here. gold-api prints roughly one new
@@ -412,6 +449,29 @@ function render(D){
       qh+='<div class="dim2" style="margin-top:8px;font-size:11px">4 largest shorts hold '+
         n(C2.gross_4_short,1)+'% of open interest · 8 largest '+
         n(C2.gross_8_short,1)+'%</div>';
+    const NH=PS.net_history;
+    if(NH){
+      const ndefs=[['managed_money','Managed money','var(--acc)'],
+                   ['swap_dealer','Swap dealers','var(--gold)'],
+                   ['prod_merc','Producer / merchant','var(--up)'],
+                   ['other_rept','Other reportables','#b07cff']];
+      const nser=ndefs.filter(d=>NH[d[0]]&&NH[d[0]].length)
+        .map(d=>({name:d[1],color:d[2],pts:NH[d[0]]}));
+      if(nser.length){
+        qh+='<div class="sub" style="margin:13px 0 5px">Large-trader net positioning '+
+          '— '+nser[0].pts.length+' weekly reports</div>';
+        qh+=multiLine(nser, 1000, 165, v=>i0(v/1000)+'k');
+        qh+='<div class="lg">'+nser.map(s=>
+          '<span><i style="background:'+s.color+'"></i>'+esc(s.name)+'</span>')
+          .join('')+'</div>';
+        qh+='<div class="note">Net = outright long minus short. Swap dealers are '+
+          'structurally short: they warehouse global hedging flow, so when that '+
+          'short shrinks they are less willing to cap the market, and when it '+
+          'grows they are capping harder. Managed money is the momentum crowd, '+
+          'and its extremes mark turns. One shared axis, deliberately — the gap '+
+          'between the two is the point.</div>';
+      }
+    }
   } else { qh='<div class="dim">loading weekly COT data…</div>'; }
   put('p-pos','<h2>Who holds what — CFTC</h2>'+qh,'pos');
 
