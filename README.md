@@ -23,6 +23,23 @@ python -m goldtrack brief        # on-demand full report
 python -m goldtrack dashboard    # write a static HTML dashboard
 ```
 
+### Shareable one-page version
+
+`docs/index.html` is a self-contained JavaScript page that runs on GitHub Pages —
+send someone the link and they see it, no install:
+
+**https://jamesyukinsun.github.io/gold-tracker/**
+
+It computes the CFTC positioning table, three-year z-scores and percentiles
+**in the browser**, straight from the CFTC's public API. Refresh its baked data
+with `python -m goldtrack pages`.
+
+A browser can only read sources that send `Access-Control-Allow-Origin`, which
+splits the feeds in half — see [CORS and what a browser can
+reach](#cors-and-what-a-browser-can-reach).
+
+
+
 ---
 
 ## Live monitor
@@ -221,6 +238,32 @@ goldtrack.cmd dashboard      # writes dashboard.html
 
 A first run downloads the CFTC archives (about 6 MB) and caches them for a day,
 so it takes a few seconds longer than later runs.
+
+---
+
+## CORS and what a browser can reach
+
+A JavaScript page running in someone's browser can only read a feed if that feed
+sends `Access-Control-Allow-Origin`. This was measured, not assumed:
+
+| Feed | CORS | Result |
+|---|---|---|
+| CFTC Commitments of Traders (Socrata) | `*` | **live in the browser** |
+| Spot XAU/USD (gold-api.com) | `*` | **live in the browser** |
+| LBMA benchmark (prices.lbma.org.uk) | `*` | **live in the browser** |
+| Yahoo Finance — COMEX GC | none | blocked |
+| sge.com.cn — Shanghai | none | blocked |
+| fsapi.gold.org — ETF tonnage | none | blocked |
+
+So the shareable page reads positioning, spot and the London benchmark live, and
+shows a **timestamped snapshot committed by `python -m goldtrack pages`** for the
+three that block it. The page labels which is which, so a photograph is never
+mistaken for a feed.
+
+That split is convenient rather than awkward: the CFTC report is the actual
+large-player dataset and it is one of the reachable ones, so the most important
+data on the page is genuinely live. The blocked set is mostly price-venue data
+that the Python monitor covers properly.
 
 ---
 

@@ -1,0 +1,357 @@
+{
+ "generated_at": "2026-09-29T21:40:42.072079+00:00",
+ "basis": "combined",
+ "bullion": {
+  "COMEX": {
+   "usd_oz": 4215.0,
+   "native": 4215.0,
+   "unit": "USD/oz",
+   "ts": "2026-09-29T20:59:59+00:00",
+   "change_pct": -1.931130758492322,
+   "venue": "COMEX",
+   "note": "real-time-ish (~seconds-minutes)"
+  },
+  "COMEX_MICRO": {
+   "usd_oz": 4215.0,
+   "native": 4215.0,
+   "unit": "USD/oz",
+   "ts": "2026-09-29T20:59:59+00:00",
+   "change_pct": -1.1746500668214195,
+   "venue": "COMEX_MICRO",
+   "note": "real-time-ish (~seconds-minutes)"
+  },
+  "SPOT": {
+   "usd_oz": 4183.100098,
+   "native": 4183.100098,
+   "unit": "USD/oz",
+   "ts": "2026-09-29T21:40:41+00:00",
+   "change_pct": null,
+   "venue": "SPOT",
+   "note": "live spot"
+  },
+  "SGE": {
+   "usd_oz": 4167.421071596578,
+   "native": 897.53,
+   "unit": "CNY/gram",
+   "ts": "2026-09-29T15:30:00+08:00",
+   "change_pct": null,
+   "venue": "SGE",
+   "note": "Au99.99 physical",
+   "fx_cny": 6.6987
+  },
+  "LBMA_PM": {
+   "usd_oz": 4144.55,
+   "native": 4144.55,
+   "unit": "USD/oz",
+   "ts": "2026-09-28T15:00:00+00:00",
+   "change_pct": null,
+   "venue": "LBMA_PM",
+   "note": "London PM auction"
+  }
+ },
+ "quotes": [
+  {
+   "venue": "SSE_GOLD_ETF",
+   "instrument": "518880.SS",
+   "price": 8.519,
+   "unit": "CNY",
+   "currency": "CNY",
+   "ts": "2026-09-29T07:00:01+00:00",
+   "fetched_at": "2026-09-29T21:40:44.154412+00:00",
+   "volume": 377557858,
+   "open_interest": null,
+   "change_pct": -3.837904955412573,
+   "source": "Yahoo Finance -> Shanghai Stock Exchange",
+   "delay_note": "delayed (~15 min)",
+   "usd_per_oz": null
+  },
+  {
+   "venue": "TSE_GOLD_ETF",
+   "instrument": "1540.T",
+   "price": 19620.0,
+   "unit": "JPY",
+   "currency": "JPY",
+   "ts": "2026-09-29T06:30:00+00:00",
+   "fetched_at": "2026-09-29T21:40:44.752289+00:00",
+   "volume": 433289,
+   "open_interest": null,
+   "change_pct": -5.308880308880308,
+   "source": "Yahoo Finance -> Tokyo Stock Exchange",
+   "delay_note": "delayed (~20 min)",
+   "usd_per_oz": null
+  },
+  {
+   "venue": "HKEX_GOLD_ETF",
+   "instrument": "2840.HK",
+   "price": 2980.0,
+   "unit": "HKD",
+   "currency": "HKD",
+   "ts": "2026-09-29T08:08:03+00:00",
+   "fetched_at": "2026-09-29T21:40:45.382802+00:00",
+   "volume": 55498,
+   "open_interest": null,
+   "change_pct": -3.9329464861379755,
+   "source": "Yahoo Finance -> HKEX",
+   "delay_note": "delayed (~15 min)",
+   "usd_per_oz": null
+  },
+  {
+   "venue": "NSE_GOLD_ETF",
+   "instrument": "GOLDBEES.NS",
+   "price": 120.64,
+   "unit": "INR",
+   "currency": "INR",
+   "ts": "2026-09-29T10:00:00+00:00",
+   "fetched_at": "2026-09-29T21:40:45.981369+00:00",
+   "volume": 28605212,
+   "open_interest": null,
+   "change_pct": -3.2790828188888024,
+   "source": "Yahoo Finance -> NSE",
+   "delay_note": "delayed (~15 min)",
+   "usd_per_oz": null
+  },
+  {
+   "venue": "GLD",
+   "instrument": "GLD",
+   "price": 382.89,
+   "unit": "USD",
+   "currency": "USD",
+   "ts": "2026-09-29T20:00:00+00:00",
+   "fetched_at": "2026-09-29T21:40:46.563864+00:00",
+   "volume": 7901795,
+   "open_interest": null,
+   "change_pct": -4.294248506511362,
+   "source": "Yahoo Finance -> NYSE Arca",
+   "delay_note": "delayed (~15 min)",
+   "usd_per_oz": null
+  },
+  {
+   "venue": "IAU",
+   "instrument": "IAU",
+   "price": 78.52,
+   "unit": "USD",
+   "currency": "USD",
+   "ts": "2026-09-29T20:00:00+00:00",
+   "fetched_at": "2026-09-29T21:40:47.176291+00:00",
+   "volume": 3552884,
+   "open_interest": null,
+   "change_pct": -4.278922345483366,
+   "source": "Yahoo Finance -> NYSE Arca",
+   "delay_note": "delayed (~15 min)",
+   "usd_per_oz": null
+  },
+  {
+   "venue": "GLDM",
+   "instrument": "GLDM",
+   "price": 82.64,
+   "unit": "USD",
+   "currency": "USD",
+   "ts": "2026-09-29T20:00:00+00:00",
+   "fetched_at": "2026-09-29T21:40:47.755462+00:00",
+   "volume": 5956900,
+   "open_interest": null,
+   "change_pct": -4.274296304876633,
+   "source": "Yahoo Finance -> NYSE Arca",
+   "delay_note": "delayed (~15 min)",
+   "usd_per_oz": null
+  }
+ ],
+ "dispersion": {
+  "high_venue": "COMEX",
+  "high": 4215.0,
+  "low_venue": "SGE",
+  "low": 4167.421071596578,
+  "spread_usd": 47.57892840342174,
+  "spread_pct": 1.1341466197039598,
+  "mid": 4195.130292399144,
+  "lbma_pm": 4144.55,
+  "live_venues": [
+   "COMEX",
+   "COMEX_MICRO",
+   "SGE",
+   "SPOT"
+  ],
+  "venues": {
+   "COMEX": 4215.0,
+   "COMEX_MICRO": 4215.0,
+   "SPOT": 4183.1,
+   "SGE": 4167.42
+  }
+ },
+ "premium": {
+  "premium_usd": 23.02110197371985,
+  "premium_pct": 0.5554749052630019,
+  "sge_usd_oz": 4167.4211019737195,
+  "reference": "LBMA AM (prior day)",
+  "reference_usd_oz": 4144.4,
+  "as_of": "2026-09-29",
+  "matched": true
+ },
+ "basis_detail": "combined",
+ "etf": {
+  "as_of": "2026-09-25",
+  "total_tonnes": 4248.92,
+  "wow_tonnes": -1.6376281599999996,
+  "by_region": {
+   "North America": 2111.98,
+   "Europe": 1522.99,
+   "Asia": 537.28,
+   "Other": 76.67
+  },
+  "flow_by_region": {
+   "North America": -4.78032816,
+   "Europe": 2.44148747,
+   "Asia": 0.49990565,
+   "Other": 0.20130688
+  },
+  "flow_13w": 200.51338386,
+  "flow_52w": 427.23717423
+ },
+ "index": {
+  "score": 50.101206423359436,
+  "label": "Neutral / two-way",
+  "components": [
+   {
+    "name": "Managed money positioning",
+    "weight": 0.2,
+    "raw": 39.86013986013986,
+    "value": -0.2027972027972028,
+    "detail": "net 131,334 ct (40th pct of 3y)"
+   },
+   {
+    "name": "Swap dealer short change",
+    "weight": 0.15,
+    "raw": -3341,
+    "value": -0.19493859813416747,
+    "detail": "net -231,355 ct, wow -3,341 ct \u2014 adding shorts"
+   },
+   {
+    "name": "Open interest build",
+    "weight": 0.15,
+    "raw": -6163,
+    "value": 0.17979745290345317,
+    "detail": "OI 571,291 ct, wow -6,163 ct (shorts covering, px +1.01%)"
+   },
+   {
+    "name": "ETF tonnage flow",
+    "weight": 0.25,
+    "raw": -1.6376281599999996,
+    "value": -0.23435976727540997,
+    "detail": "-1.6 t wow, total 4,249 t"
+   },
+   {
+    "name": "Shanghai physical premium",
+    "weight": 0.1,
+    "raw": 23.02110197371985,
+    "value": 0.7673700657906617,
+    "detail": "+23.0 USD/oz vs London"
+   },
+   {
+    "name": "Tape imbalance (large prints)",
+    "weight": 0.15,
+    "raw": 0.5890255868367424,
+    "value": 0.17805117367348489,
+    "detail": "59% of flagged volume on the bid"
+   }
+  ]
+ },
+ "tape": {
+  "symbol": "GC=F",
+  "typical_volume": 78.0,
+  "session_volume": 121449.0,
+  "spikes": [
+   {
+    "ts": "2026-09-29T18:00:00+00:00",
+    "close": 4190.2001953125,
+    "volume": 2187.0,
+    "typical_volume": 85.5,
+    "volume_multiple": 25.57894736842105,
+    "volume_z": 65.92755028093325,
+    "move": 13.80029296875,
+    "move_sigma": 8.92445899802868,
+    "direction": "buy"
+   },
+   {
+    "ts": "2026-09-29T17:29:00+00:00",
+    "close": 4180.7001953125,
+    "volume": 920.0,
+    "typical_volume": 77.0,
+    "volume_multiple": 11.948051948051948,
+    "volume_z": 24.72155261907695,
+    "move": 1.400390625,
+    "move_sigma": 0.47591405628651273,
+    "direction": "buy"
+   },
+   {
+    "ts": "2026-09-29T18:02:00+00:00",
+    "close": 4195.7001953125,
+    "volume": 876.0,
+    "typical_volume": 85.5,
+    "volume_multiple": 10.24561403508772,
+    "volume_z": 22.216039390260352,
+    "move": 6.7001953125,
+    "move_sigma": 2.6082598182663257,
+    "direction": "buy"
+   },
+   {
+    "ts": "2026-09-29T18:01:00+00:00",
+    "close": 4189.0,
+    "volume": 778.0,
+    "typical_volume": 85.5,
+    "volume_multiple": 9.099415204678362,
+    "volume_z": 19.46186878906426,
+    "move": -1.2001953125,
+    "move_sigma": -0.5502341019614266,
+    "direction": "sell"
+   },
+   {
+    "ts": "2026-09-29T11:49:00+00:00",
+    "close": 4189.7998046875,
+    "volume": 699.0,
+    "typical_volume": 76.0,
+    "volume_multiple": 9.197368421052632,
+    "volume_z": 15.280281569233413,
+    "move": 6.39990234375,
+    "move_sigma": 2.192168414935233,
+    "direction": "buy"
+   },
+   {
+    "ts": "2026-09-29T05:53:00+00:00",
+    "close": 4176.0,
+    "volume": 498.0,
+    "typical_volume": 48.5,
+    "volume_multiple": 10.268041237113403,
+    "volume_z": 14.789443726084368,
+    "move": 5.89990234375,
+    "move_sigma": 1.497272263345155,
+    "direction": "buy"
+   },
+   {
+    "ts": "2026-09-29T09:32:00+00:00",
+    "close": 4172.0,
+    "volume": 398.0,
+    "typical_volume": 39.5,
+    "volume_multiple": 10.075949367088608,
+    "volume_z": 14.654844683173296,
+    "move": -0.89990234375,
+    "move_sigma": -0.6269010118552982,
+    "direction": "sell"
+   },
+   {
+    "ts": "2026-09-29T05:39:00+00:00",
+    "close": 4166.2998046875,
+    "volume": 436.0,
+    "typical_volume": 41.5,
+    "volume_multiple": 10.506024096385541,
+    "volume_z": 13.645466903257272,
+    "move": 5.0,
+    "move_sigma": 2.397075679600667,
+    "direction": "buy"
+   }
+  ],
+  "flagged_count": 60,
+  "buy_ratio": 0.5890255868367424
+ },
+ "positions_date": "2026-09-22",
+ "errors": {}
+}

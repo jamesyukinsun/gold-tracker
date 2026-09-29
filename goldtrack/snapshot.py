@@ -42,14 +42,37 @@ def build(fetch_tape: bool = True, fetch_history: bool = True,
     snap["quotes"] = grab("quotes", analytics.venue_snapshot) or []
     snap["dispersion"] = grab("dispersion", analytics.cross_venue_dispersion,
                               snap["bullion"]) or {}
-    snap["premium"] = grab("premium", analytics.sge_premium, snap["bullion"])
+
+    # Premium history first: its latest row is also the correct headline
+    # premium, because it compares the SGE close with a reference at the SAME
+    # moment (and, for the COMEX leg, before subtracting the futures basis).
+    # The naive "SGE print vs live spot" comparison mixes hours of market drift
+    # into the number, so it is only a flagged fallback.
+    snap["premium_history"] = (grab("premium_history", analytics.sge_premium_history,
+                                    premium_days)
+                               if fetch_history else None)
+    hist = snap.get("premium_history") or []
+    if hist:
+        last = hist[-1]
+        snap["premium"] = {
+            "premium_usd": last.get("premium_lbma_am", last.get("premium_usd")),
+            "premium_pct": last.get("premium_lbma_am_pct", last.get("premium_pct")),
+            "sge_usd_oz": last.get("sge_usd_oz"),
+            "reference": last.get("spot_ref_name", "spot reference"),
+            "reference_usd_oz": last.get("spot_ref"),
+            "as_of": last.get("date"),
+            "matched": True,
+        }
+    else:
+        snap["premium"] = grab("premium", analytics.sge_premium, snap["bullion"])
+        if snap.get("premium"):
+            snap["premium"]["matched"] = False
+            snap["premium"]["reference"] = ("live spot (TIMING MISMATCH — "
+                                            "SGE print is not contemporaneous)")
     snap["positions"] = grab("positions", analytics.cot_analysis, 3, basis)
     snap["etf"] = grab("etf", analytics.etf_analysis)
     snap["tape"] = (grab("tape", analytics.tape, tape_symbol)
                     if fetch_tape else None)
-    snap["premium_history"] = (grab("premium_history", analytics.sge_premium_history,
-                                    premium_days)
-                               if fetch_history else None)
 
     # The composite needs the pieces, so it runs last.
     snap["index"] = analytics.big_player_index(

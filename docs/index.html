@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Gold — Big-Player Tracker</title>
+<meta name="description" content="Who holds gold, who is moving it, and where physical metal is bid up. Live CFTC positioning, the Shanghai premium, and COMEX tape anomalies.">
+<style>
+  :root{
+    --bg:#0b0e13; --panel:#131822; --panel2:#171d29; --line:#232c3d;
+    --fg:#e8edf7; --dim:#8b98b0; --dim2:#5f6b80;
+    --up:#2fd07f; --down:#ff5f6d; --gold:#f5c542; --acc:#4aa8ff; --warn:#ffab3d;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--fg);
+       font:14px/1.55 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif;
+       padding:20px 22px 48px;max-width:1180px;margin:0 auto}
+  h1{font-size:21px;margin:0;letter-spacing:-.3px}
+  h2{font-size:12px;margin:0 0 10px;color:var(--dim);text-transform:uppercase;
+     letter-spacing:.1em;font-weight:600}
+  a{color:var(--acc)}
+  .top{display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;
+       border-bottom:1px solid var(--line);padding-bottom:15px;margin-bottom:18px}
+  .sub{color:var(--dim);font-size:11.5px;margin-top:4px}
+  .px{margin-left:auto;text-align:right}
+  .px .big{font-size:34px;font-weight:600;letter-spacing:-1.3px;
+           font-variant-numeric:tabular-nums}
+  .px .ccy{font-size:12px;color:var(--dim);font-weight:400}
+  .grid{display:grid;gap:15px}
+  .g2{grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:11px;
+         padding:15px 17px;margin-bottom:15px}
+  table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+  th{text-align:left;color:var(--dim2);font-weight:600;font-size:10px;
+     text-transform:uppercase;letter-spacing:.07em;padding:5px 8px;
+     border-bottom:1px solid var(--line);white-space:nowrap}
+  td{padding:6px 8px;border-bottom:1px solid rgba(35,44,61,.45);white-space:nowrap}
+  tr:last-child td{border-bottom:none}
+  td.r,th.r{text-align:right}
+  .up{color:var(--up)} .down{color:var(--down)} .gold{color:var(--gold)}
+  .dim{color:var(--dim)} .dim2{color:var(--dim2)} .acc{color:var(--acc)}
+  .mono{font-family:ui-monospace,"SF Mono",Consolas,monospace;font-size:12.5px}
+  .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;
+        font-weight:700;letter-spacing:.05em}
+  .live{background:rgba(47,208,127,.15);color:var(--up)}
+  .baked{background:rgba(255,171,61,.15);color:var(--warn)}
+  .dot{display:inline-block;width:7px;height:7px;border-radius:50%;
+       margin-right:6px;vertical-align:1px}
+  .note{color:var(--dim2);font-size:11px;margin-top:10px;line-height:1.6}
+  .warn{background:rgba(255,171,61,.08);border:1px solid rgba(255,171,61,.3);
+        border-radius:9px;padding:11px 13px;font-size:12px;color:#ffd9a8;
+        margin-bottom:15px}
+  .lg{display:flex;gap:14px;flex-wrap:wrap;color:var(--dim);font-size:11px;margin-top:8px}
+  .lg i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:5px}
+  .bar{height:6px;background:var(--panel2);border-radius:3px;overflow:hidden;margin-top:5px}
+  .bar span{display:block;height:100%;border-radius:3px}
+  svg{display:block;width:100%;overflow:visible}
+  footer{margin-top:22px;padding-top:14px;border-top:1px solid var(--line);
+         color:var(--dim2);font-size:11.5px;line-height:1.7}
+  code{background:var(--panel2);padding:1px 5px;border-radius:4px;font-size:11.5px}
+</style></head><body>
+
+<div class="top">
+  <div>
+    <h1>Gold — Big-Player Tracker</h1>
+    <div class="sub" id="meta">loading…</div>
+  </div>
+  <div class="px">
+    <div class="big" id="spot">—</div>
+    <div class="sub" id="spotsub">spot XAU/USD</div>
+  </div>
+</div>
+
+<div class="warn" id="corsnote" style="display:none"></div>
+
+<div class="panel" id="p-pos">
+  <h2>Who holds what <span class="pill live" id="pos-badge">live</span></h2>
+  <div id="pos-body" class="dim">Fetching CFTC Commitments of Traders…</div>
+</div>
+
+<div class="panel" id="p-chart">
+  <h2>Large-trader net positioning</h2>
+  <div id="chart-body" class="dim">…</div>
+</div>
+
+<div class="grid g2">
+  <div class="panel" id="p-spotb">
+    <h2>Spot &amp; benchmarks <span class="pill live">live</span></h2>
+    <div id="spotb-body" class="dim">Fetching…</div>
+  </div>
+  <div class="panel" id="p-baked">
+    <h2>Venues, ETFs &amp; tape <span class="pill baked">as published</span></h2>
+    <div id="baked-body" class="dim">Loading…</div>
+  </div>
+</div>
+
+<footer id="foot">Loading…</footer>
+
+<script>
+/* ------------------------------------------------------------------ helpers */
+const $ = id => document.getElementById(id);
+const n = (x,d=2) => (x==null||isNaN(x)) ? '—' :
+  Number(x).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});
+const i0 = x => (x==null||isNaN(x)) ? '—' :
+  Number(x).toLocaleString('en-US',{maximumFractionDigits:0});
+const sgn = (x,d=2) => (x==null||isNaN(x)) ? '—' : (x>0?'+':'')+n(x,d);
+const cls = x => x>0?'up':(x<0?'down':'');
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,
+  c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const mean = a => a.reduce((x,y)=>x+y,0)/a.length;
+const pstdev = a => { const m=mean(a); return Math.sqrt(mean(a.map(v=>(v-m)**2))); };
+const zscore = (a,x) => { const s=pstdev(a); return s ? (x-mean(a))/s : 0; };
+const pctile = (a,x) => 100*a.filter(v=>v<=x).length/a.length;
+const hhmm = iso => { const d=new Date(iso);
+  return ('0'+d.getHours()).slice(-2)+':'+('0'+d.getMinutes()).slice(-2); };
+
+/* ------------------------------------------------------------------- LFMA */
+const CFTC = 'https://publicreporting.cftc.gov/resource/72hh-3qpy.json';
+const CFTC_FIELDS = ['report_date_as_yyyy_mm_dd','open_interest_all',
+  'm_money_positions_long_all','m_money_positions_short_all',
+  'swap_positions_long_all','swap__positions_short_all',
+  'prod_merc_positions_long','prod_merc_positions_short',
+  'other_rept_positions_long','other_rept_positions_short','traders_tot_all'].join(',');
+const GROUPS = [
+  {key:'swap_dealer', label:'Swap Dealers',
+   who:'Bullion banks — the largest single force in the market',
+   L:'swap_positions_long_all', S:'swap__positions_short_all'},
+  {key:'managed_money', label:'Managed Money',
+   who:'Hedge funds, CTAs, macro funds — the momentum crowd',
+   L:'m_money_positions_long_all', S:'m_money_positions_short_all'},
+  {key:'other_rept', label:'Other Reportables',
+   who:'Large non-commercial traders outside the above',
+   L:'other_rept_positions_long', S:'other_rept_positions_short'},
+  {key:'prod_merc', label:'Producer / Merchant',
+   who:'Miners, refiners, jewelers — commercial hedgers',
+   L:'prod_merc_positions_long', S:'prod_merc_positions_short'},
+];
+
+/* ------------------------------------------------------- live: spot + LBMA */
+async function loadSpot(){
+  try{
+    const r = await fetch('https://api.gold-api.com/price/XAU',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const d = await r.json();
+    $('spot').innerHTML = '<span class="gold">'+n(d.price)+'</span>'+
+      '<span class="ccy"> USD/oz</span>';
+    $('spotsub').textContent = 'spot XAU/USD · updated '+
+      (d.updatedAtReadable || hhmm(d.updatedAt));
+  }catch(e){ $('spot').textContent = '—';
+    $('spotsub').textContent = 'spot feed unavailable'; }
+}
+let lbma = null;
+async function loadLbma(){
+  try{
+    const r = await fetch('https://prices.lbma.org.uk/json/gold_pm.json',{cache:'no-store'});
+    const rows = await r.json();
+    for(let i=rows.length-1;i>=0;i--){
+      if(rows[i].v && rows[i].v[0]!=null){ lbma = {date:rows[i].d, usd:rows[i].v[0]}; break; }
+    }
+  }catch(e){ lbma = null; }
+  renderSpotBench();
+}
+function renderSpotBench(){
+  let h = '<table>';
+  const sp = $('spot').textContent.replace(/[^\d.]/g,'');
+  if(sp) h += '<tr><td>Spot XAU/USD</td><td class="r mono gold">'+n(parseFloat(sp))+
+              '</td><td class="r dim2">live</td></tr>';
+  if(lbma) h += '<tr><td>LBMA Gold Price (PM auction)</td><td class="r mono">'+
+                n(lbma.usd)+'</td><td class="r dim2">'+esc(lbma.date)+'</td></tr>';
+  h += '</table>';
+  h += '<div class="note">The London benchmark is fixed twice a day by auction, so a '+
+       'same-day figure is correct, not stale. Everything on this page is fetched by '+
+       'your browser directly from the source — there is no server in between.</div>';
+  $('spotb-body').innerHTML = h;
+}
+
+/* --------------------------------------------------- live: CFTC positioning */
+async function loadCftc(){
+  const url = CFTC + '?$select=' + CFTC_FIELDS +
+    '&$order=report_date_as_yyyy_mm_dd%20DESC&$limit=160&cftc_contract_market_code=088691';
+  const r = await fetch(url, {cache:'no-store'});
+  if(!r.ok) throw new Error('CFTC HTTP '+r.status);
+  const rows = (await r.json()).slice().reverse();   // oldest first
+  if(!rows.length) throw new Error('no COT rows');
+  const latest = rows[rows.length-1];
+  const prev = rows[rows.length-2] || latest;
+  const oi = +latest.open_interest_all;
+
+  let h = '<div class="sub" style="margin-bottom:10px">report date <b>'+
+    esc((latest.report_date_as_yyyy_mm_dd||'').slice(0,10))+
+    '</b> · released Friday 15:30 ET · open interest <b>'+i0(oi)+
+    ' contracts</b> · '+(latest.traders_tot_all||'?')+' reporting traders</div>';
+
+  h += '<table><tr><th>Group</th><th class="r">Long</th><th class="r">Short</th>'+
+       '<th class="r">Net</th><th class="r">&#916; week</th><th class="r">Z (3y)</th>'+
+       '<th class="r">Percentile</th></tr>';
+  const series = {};
+  GROUPS.forEach(g=>{
+    const net = rows.map(rr => (+rr[g.L]||0) - (+rr[g.S]||0));
+    series[g.key] = net;
+    const cur = net[net.length-1], pv = net[net.length-2] ?? cur;
+    const z = zscore(net, cur), p = pctile(net, cur);
+    const crowding = p>=90 ? ' <span class="down" title="crowded">&#9650;</span>'
+                    : p<=10 ? ' <span class="up" title="washed out">&#9660;</span>' : '';
+    h += '<tr><td>'+esc(g.label)+crowding+'</td>'+
+      '<td class="r mono">'+i0(latest[g.L])+'</td>'+
+      '<td class="r mono">'+i0(latest[g.S])+'</td>'+
+      '<td class="r mono '+(cur>0?'up':'down')+'">'+sgn(cur,0)+'</td>'+
+      '<td class="r mono '+cls(cur-pv)+'">'+sgn(cur-pv,0)+'</td>'+
+      '<td class="r mono">'+sgn(z)+'</td>'+
+      '<td class="r mono">'+p.toFixed(0)+'%</td></tr>';
+  });
+  h += '</table>';
+  h += '<div class="note"><b>Net</b> = outright long &#8722; short. <b>Z</b> and '+
+    '<b>percentile</b> are computed in your browser over the '+(rows.length)+
+    ' weekly reports fetched here — a percentile above ~90 or below ~10 means '+
+    'positioning is at a three-year extreme, which is where turns begin. '+
+    '&#9650;/&#9660; mark those extremes.<br><br>'+
+    '<b>Basis:</b> this is the CFTC <i>futures-only</i> disaggregated report '+
+    '(gold, COMEX contract 088691). The CFTC also publishes a '+
+    '<i>futures + options combined</i> version whose open interest is materially '+
+    'higher (about 571k against 413k contracts); the two must never be mixed and '+
+    'the python tool in this repo lets you pick either.</div>';
+  $('pos-body').innerHTML = h;
+  $('pos-badge').textContent = 'live';
+  drawChart(rows, series);
+}
+
+/* ------------------------------------------------------------- net-position */
+function drawChart(rows, series){
+  const W=1000, H=210, padL=6, padR=6;
+  const defs=[['managed_money','Managed money','var(--acc)'],
+              ['swap_dealer','Swap dealers','var(--gold)'],
+              ['prod_merc','Producer / merchant','var(--up)'],
+              ['other_rept','Other reportables','#b07cff']];
+  const all=defs.flatMap(d=>series[d[0]]||[]);
+  if(!all.length){ $('chart-body').textContent='no data'; return; }
+  let lo=Math.min.apply(null,all), hi=Math.max.apply(null,all);
+  const sp=(hi-lo)||1; lo-=sp*.06; hi+=sp*.06;
+  const N=Math.max.apply(null, defs.map(d=>(series[d[0]]||[]).length));
+  const X=i=>padL+(W-padL-padR)*(N>1?i/(N-1):.5);
+  const Y=v=>10+(H-20)*(1-(v-lo)/(hi-lo));
+  const NS='http://www.w3.org/2000/svg';
+  let s='';
+  for(let g=0;g<=4;g++){
+    const y=10+(H-20)*g/4;
+    s+='<line x1="0" x2="'+W+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+
+       '" stroke="var(--line)" stroke-width="1"/>';
+    const lab=hi-(hi-lo)*g/4;
+    s+='<text x="'+(W-4)+'" y="'+(y-3).toFixed(1)+'" fill="var(--dim2)" '+
+       'font-size="10" text-anchor="end">'+i0(lab/1000)+'k</text>';
+  }
+  if(lo<0&&hi>0){
+    const y=Y(0);
+    s+='<line x1="0" x2="'+W+'" y1="'+y.toFixed(1)+'" y2="'+y.toFixed(1)+
+       '" stroke="#3d4a63" stroke-width="1" stroke-dasharray="3 3"/>';
+  }
+  defs.forEach(d=>{
+    const v=series[d[0]]; if(!v||!v.length) return;
+    const pts=v.map((val,i)=>X(i).toFixed(1)+','+Y(val).toFixed(1)).join(' ');
+    s+='<polyline points="'+pts+'" fill="none" stroke="'+d[2]+
+       '" stroke-width="1.8" stroke-linejoin="round"/>';
+  });
+  $('chart-body').innerHTML =
+    '<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+s+'</svg>'+
+    '<div class="lg">'+defs.map(d=>'<span><i style="background:'+d[2]+'"></i>'+
+      d[1]+'</span>').join('')+'</div>'+
+    '<div class="note">Weekly, from <b>'+
+      esc((rows[0].report_date_as_yyyy_mm_dd||'').slice(0,10))+'</b> to <b>'+
+      esc((rows[rows.length-1].report_date_as_yyyy_mm_dd||'').slice(0,10))+'</b>. '+
+      'Swap dealers are structurally short — they warehouse the world&#39;s hedging '+
+      'flow and sell into strength. When that short shrinks they are less willing to '+
+      'cap the market; when it grows they are capping harder. Managed money is the '+
+      'momentum crowd, and its extremes mark turns.</div>';
+}
+
+/* ------------------------------------- baked: what CORS will not let us read */
+async function loadBaked(){
+  try{
+    const r = await fetch('snapshot.json',{cache:'no-store'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    renderBaked(await r.json());
+  }catch(e){
+    $('baked-body').innerHTML = '<div class="dim">No published snapshot found.</div>';
+  }
+}
+function renderBaked(D){
+  const B=D.bullion||{}, P=D.premium, E=D.etf, T=D.tape, BX=D.basis;
+  let h='<div class="sub" style="margin-bottom:10px">captured <b>'+
+    esc((D.generated_at||'').replace('T',' ').slice(0,19))+' UTC</b> by the python '+
+    'tool in this repo</div>';
+  h+='<table>';
+  [['COMEX','Gold futures (GC)'],['SPOT','Spot XAU/USD'],
+   ['SGE','Shanghai Au99.99'],['LBMA_PM','London PM auction']].forEach(([k,lab])=>{
+    const b=B[k]; if(!b) return;
+    const px = b.usd_oz!=null ? n(b.usd_oz)+' USD/oz'
+             : (b.native!=null ? n(b.native)+' '+esc(b.unit||'') : '—');
+    h+='<tr><td>'+lab+'</td><td class="r mono gold">'+px+'</td></tr>';
+  });
+  if(BX) h+='<tr><td>COMEX basis over spot</td><td class="r mono">'+
+    sgn(BX.basis_usd)+'</td></tr>';
+  if(P) h+='<tr><td>Shanghai premium vs implied spot</td><td class="r mono '+
+    cls(P.premium_usd)+'">'+sgn(P.premium_usd)+'</td></tr>';
+  if(E) h+='<tr><td>ETF tonnage held</td><td class="r mono">'+n(E.total_tonnes,1)+
+    ' t <span class="dim2">('+sgn(E.wow_tonnes,2)+' t wow)</span></td></tr>';
+  if(T) h+='<tr><td>Tape anomalies (session)</td><td class="r mono">'+
+    (T.flagged_count||0)+'</td></tr>';
+  if(D.index && D.index.score!=null) h+='<tr><td>Big-player pressure index</td>'+
+    '<td class="r mono gold">'+Math.round(D.index.score)+'/100 '+
+    '<span class="dim2">'+esc(D.index.label)+'</span></td></tr>';
+  h+='</table>';
+  h+='<div class="note">These venues publish no CORS header, so a browser page is '+
+    'not allowed to read them directly — Yahoo (COMEX), sge.com.cn (Shanghai) and '+
+    'gold.org (ETF tonnage) all block cross-origin reads. The values above were '+
+    'captured server-side by the python tool and committed here, so they are a '+
+    'photograph, not a live feed, and the timestamp above says exactly how old.</div>';
+  $('baked-body').innerHTML=h;
+}
+
+/* --------------------------------------------------------------------- boot */
+$('meta').innerHTML = 'live CFTC positioning and spot, computed in your browser · '+
+  'no server, no build step';
+loadSpot(); loadLbma(); loadBaked();
+loadCftc().catch(e=>{
+  $('pos-body').innerHTML = '<div class="down">Could not load the CFTC feed: '+
+    esc(e.message)+'. The public reporting endpoint may be rate-limiting you; '+
+    'reload in a moment.</div>';
+});
+setInterval(loadSpot, 30000);
+setInterval(renderSpotBench, 31000);
+
+$('foot').innerHTML =
+  'Sources: positioning from the <a href="https://publicreporting.cftc.gov/" '+
+  'target="_blank" rel="noopener">CFTC Commitments of Traders</a> (weekly, released '+
+  'Friday 15:30 ET — the only legal disclosure of large-trader books); spot from '+
+  '<a href="https://gold-api.com" target="_blank" rel="noopener">gold-api.com</a>; '+
+  'the London benchmark from <a href="https://www.lbma.org.uk/prices-and-data" '+
+  'target="_blank" rel="noopener">LBMA</a>. <b>What this page cannot see:</b> the COT '+
+  'report names categories, never firms, by law. True COMEX depth and order-book '+
+  'identity require a CME data licence. London OTC is bilateral, so only the auction '+
+  'benchmark is public. Nothing here is investment advice.<br><br>'+
+  'Fully open source, zero dependencies: '+
+  '<a href="https://github.com/jamesyukinsun/gold-tracker" target="_blank" '+
+  'rel="noopener">github.com/jamesyukinsun/gold-tracker</a>';
+</script>
+</body></html>

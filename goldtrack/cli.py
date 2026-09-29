@@ -412,6 +412,54 @@ def cmd_serve(args) -> int:
     return 0
 
 
+def cmd_pages(args) -> int:
+    """Refresh the data behind the shareable static page in docs/.
+
+    The JS page reads live data where CORS allows (spot, LBMA, CFTC
+    positioning) and falls back to this baked snapshot for the venues that
+    block cross-origin reads (COMEX/Yahoo, Shanghai, WGC ETF tonnage).
+    Re-run this to update the photograph, then commit docs/snapshot.json.
+    """
+    snap = snapshot.build(basis=args.basis, tape_symbol=args.symbol,
+                          premium_days=args.days, verbose=True)
+    js = snapshot.to_jsonable(snap)
+
+    # Only the fields the page renders: keeps the committed file small and the
+    # page fast to load. Anything the browser can fetch live is deliberately
+    # absent, so it can never go stale here.
+    trimmed = {
+        "generated_at": js.get("generated_at"),
+        "basis": js.get("basis"),
+        "bullion": js.get("bullion"),
+        "quotes": js.get("quotes"),
+        "dispersion": js.get("dispersion"),
+        "premium": js.get("premium"),
+        "basis_detail": js.get("basis"),
+        "etf": {k: v for k, v in (js.get("etf") or {}).items()
+                if k in ("as_of", "total_tonnes", "wow_tonnes", "flow_13w",
+                         "flow_52w", "by_region", "flow_by_region")},
+        "index": {k: v for k, v in (js.get("index") or {}).items()
+                  if k in ("score", "label", "components")},
+        "tape": {k: v for k, v in (js.get("tape") or {}).items()
+                 if k in ("symbol", "flagged_count", "buy_ratio",
+                          "session_volume", "typical_volume", "spikes")},
+        "positions_date": (js.get("positions") or {}).get("report_date"),
+        "errors": js.get("errors"),
+    }
+
+    out = args.out
+    os.makedirs(os.path.dirname(os.path.abspath(out)), exist_ok=True)
+    with open(out, "w", encoding="utf-8") as fh:
+        json.dump(trimmed, fh, indent=1)
+    print(f"Page data written: {out} ({os.path.getsize(out):,} bytes)")
+    print(f"  captured {trimmed['generated_at']}")
+    for k, v in (trimmed.get("errors") or {}).items():
+        print(f"  ! {k}: {v}")
+    print()
+    print("  Commit it to publish:  git add docs && git commit -m 'refresh page data' && git push")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="goldtrack",
@@ -498,6 +546,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp = sub.add_parser("dashboard", help="write the HTML dashboard")
     sp.add_argument("-o", "--out", default=DEFAULT_DASH)
     sp.set_defaults(func=cmd_dashboard)
+
+    sp = sub.add_parser("pages", help="refresh the data behind the shareable "
+                                      "static page in docs/")
+    sp.add_argument("-o", "--out", default=os.path.join(ROOT, "docs", "snapshot.json"))
+    sp.set_defaults(func=cmd_pages)
 
     sp = sub.add_parser("check", help="verify every feed is reachable")
     sp.set_defaults(func=cmd_check)
