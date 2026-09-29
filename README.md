@@ -11,8 +11,10 @@ Runs two ways:
   that updates in place (terminal or browser)
 * **on-demand reports** — one-shot briefs, JSON exports, a static dashboard
 
-Zero third-party dependencies. Python 3.9+. Standard library only — it runs
+Zero third-party dependencies. Python 3.10+. Standard library only — it runs
 anywhere Python exists.
+
+![goldtrack live monitor](docs/live-monitor.png)
 
 ```bash
 python -m goldtrack monitor      # LIVE terminal monitor
@@ -105,6 +107,8 @@ the session-trend panel above, which stacks the two on separate axes.
 Line mode (`--plain`) records the same bars but does not draw them, since it is
 built for logs.
 
+![1-minute spot chart](docs/spot-chart.png)
+
 
 ### Why one thread per feed
 
@@ -149,18 +153,21 @@ slow feeds or starves the fast ones. Each feed therefore:
 | `export` | Dump the complete raw snapshot as JSON |
 | `db` | Local database statistics and recent alert history |
 
+![static dashboard](docs/static-dashboard.png)
+
 ## How to run it
 
 There is nothing to install — no `pip`, no virtualenv, no dependencies. You only
-need Python 3.10 or newer. Verified on this machine with Python 3.10.9 and 3.12.9.
+need Python 3.10 or newer. Tested on CPython 3.10.9 and 3.12.9.
 
 ### Easiest — the launcher (Windows)
 
-Double-click `goldtrack.cmd`, or from any terminal:
+Double-click `goldtrack.cmd`, or from any terminal, using the folder you cloned
+into:
 
 ```
-C:\Users\James Yu\gold-tracker\goldtrack.cmd check
-C:\Users\James Yu\gold-tracker\goldtrack.cmd monitor
+C:\path\to\gold-tracker\goldtrack.cmd check
+C:\path\to\gold-tracker\goldtrack.cmd monitor
 ```
 
 With no arguments it prints the help and a list of common commands. The launcher
@@ -171,7 +178,7 @@ which Python is on your `PATH`.
 ### From a terminal in the project folder
 
 ```
-cd "C:\Users\James Yu\gold-tracker"
+cd path/to/gold-tracker
 python -m goldtrack check
 ```
 
@@ -180,7 +187,7 @@ This is the form to use if you add the folder to your `PATH` or set `PYTHONPATH`
 ### From anywhere, without changing directory
 
 ```
-python "C:\Users\James Yu\gold-tracker\run.py" check
+python path/to/gold-tracker/run.py check
 ```
 
 `run.py` adds its own folder to the import path, so the module resolves.
@@ -190,8 +197,9 @@ python "C:\Users\James Yu\gold-tracker\run.py" check
 `python -m goldtrack` only works from inside the project folder — from elsewhere
 you get `No module named goldtrack`. Use the launcher or `run.py` for that case.
 
-The `python` on your `PATH` may be the Microsoft Store stub, which opens the
-Store instead of running anything. If you hit that, use the explicit interpreter:
+On Windows the `python` on your `PATH` may be the Microsoft Store stub, which
+opens the Store instead of running anything. If you hit that, name the
+interpreter explicitly, or just use `goldtrack.cmd`, which sidesteps the question:
 
 ```
 "%LOCALAPPDATA%\Programs\Python\Python312\python.exe" -m goldtrack check
