@@ -427,14 +427,24 @@ def cmd_pages(args) -> int:
     # Only the fields the page renders: keeps the committed file small and the
     # page fast to load. Anything the browser can fetch live is deliberately
     # absent, so it can never go stale here.
+    # `basis` means two different things across the codebase: the COT report
+    # basis ("combined"/"futures") and the COMEX-over-spot futures basis. The
+    # page wants the latter, so the report basis is renamed rather than letting
+    # the collision render an empty cell.
+    bull = js.get("bullion") or {}
+    comex = (bull.get("COMEX") or {}).get("usd_oz")
+    spot = (bull.get("SPOT") or {}).get("usd_oz")
+    basis_obj = ({"basis_usd": comex - spot, "comex": comex, "spot": spot}
+                 if comex and spot else None)
+
     trimmed = {
         "generated_at": js.get("generated_at"),
-        "basis": js.get("basis"),
+        "cot_basis": js.get("basis"),
+        "basis": basis_obj,
         "bullion": js.get("bullion"),
         "quotes": js.get("quotes"),
         "dispersion": js.get("dispersion"),
         "premium": js.get("premium"),
-        "basis_detail": js.get("basis"),
         "etf": {k: v for k, v in (js.get("etf") or {}).items()
                 if k in ("as_of", "total_tonnes", "wow_tonnes", "flow_13w",
                          "flow_52w", "by_region", "flow_by_region")},
