@@ -535,13 +535,15 @@ class LiveEngine:
                     message=(f"Feed '{fs.label or name}' is down: "
                              f"{fs.consecutive_errors} consecutive failures "
                              f"({fs.last_error or 'unknown error'})"),
-                    detail={"feed": name, "errors": fs.consecutive_errors}))
+                    detail={"feed": name, "errors": fs.consecutive_errors},
+                    key=f"feed_down_{name}", cooldown=alerts_mod.STATE_COOLDOWN_S))
             if not fs.thread_alive:
                 out.append(alerts_mod.Alert(
                     code=f"feed_dead_{name}", level="CRITICAL",
                     message=(f"Feed '{fs.label or name}' poller thread has exited. "
                              f"It will not recover without a restart."),
-                    detail={"feed": name}))
+                    detail={"feed": name},
+                    key=f"feed_dead_{name}", cooldown=alerts_mod.STATE_COOLDOWN_S))
                 continue
             # Alive but not cycling: the thread is wedged inside a call it cannot
             # return from. Distinguished from slow, which is normal.
@@ -555,7 +557,9 @@ class LiveEngine:
                              f"{fs.interval/60:.0f} min cadence. The thread is "
                              f"alive but its loop has stopped cycling."),
                     detail={"feed": name, "attempt_age_s": a,
-                            "interval": fs.interval}))
+                            "interval": fs.interval},
+                    key=f"feed_stalled_{name}",
+                    cooldown=alerts_mod.STATE_COOLDOWN_S))
 
         # Shanghai publishes completed sessions, so its print legitimately lags.
         # Say so plainly rather than letting a stale number look live.
@@ -574,7 +578,8 @@ class LiveEngine:
                                 "publishes completed sessions only"
                                 if sess_open else "")),
                     detail={"age_minutes": age_min, "venue_open": bool(sess_open),
-                            "data_ts": dts.isoformat()}))
+                            "data_ts": dts.isoformat()},
+                    key="sge_print_stale", cooldown=alerts_mod.STATE_COOLDOWN_S))
 
         if prem and not prem.get("matched"):
             sts = prem.get("sge_ts")
@@ -583,15 +588,17 @@ class LiveEngine:
                 message=("Shanghai premium unverified: no reference price "
                          "contemporaneous with the SGE print, so it is being "
                          "compared to live spot and includes market drift"),
-                detail={"sge_ts": sts.isoformat() if sts else None}))
+                detail={"sge_ts": sts.isoformat() if sts else None},
+                key="premium_unverified", cooldown=alerts_mod.STATE_COOLDOWN_S))
         return out
 
     def _dispatch_alerts(self, al: list) -> None:
         now = time.time()
         fresh = []
         for a in al:
-            key = f"{a.code}|{a.message}"
-            if now - self._alert_seen.get(key, 0.0) < self.alert_cooldown:
+            key = a.dedupe_key()
+            cd = a.cooldown if a.cooldown is not None else self.alert_cooldown
+            if now - self._alert_seen.get(key, 0.0) < cd:
                 continue
             self._alert_seen[key] = now
             fresh.append(a)

@@ -1,35 +1,35 @@
 {
- "generated_at": "2026-09-29T22:46:01.908873+00:00",
+ "generated_at": "2026-09-30T00:00:59.096849+00:00",
  "cot_basis": "combined",
  "basis": {
-  "basis_usd": 31.20019500000035,
-  "comex": 4210.0,
-  "spot": 4178.799805
+  "basis_usd": 30.60009799999989,
+  "comex": 4216.5,
+  "spot": 4185.899902
  },
  "bullion": {
   "COMEX": {
-   "usd_oz": 4210.0,
-   "native": 4210.0,
+   "usd_oz": 4216.5,
+   "native": 4216.5,
    "unit": "USD/oz",
-   "ts": "2026-09-29T22:35:39+00:00",
-   "change_pct": -2.047463936714751,
+   "ts": "2026-09-29T23:50:24+00:00",
+   "change_pct": -1.8962308050255932,
    "venue": "COMEX",
    "note": "real-time-ish (~seconds-minutes)"
   },
   "COMEX_MICRO": {
-   "usd_oz": 4210.3,
-   "native": 4210.3,
+   "usd_oz": 4216.4,
+   "native": 4216.4,
    "unit": "USD/oz",
-   "ts": "2026-09-29T22:35:49+00:00",
-   "change_pct": -1.284846779676917,
+   "ts": "2026-09-29T23:50:44+00:00",
+   "change_pct": -1.1418255140559594,
    "venue": "COMEX_MICRO",
    "note": "real-time-ish (~seconds-minutes)"
   },
   "SPOT": {
-   "usd_oz": 4178.799805,
-   "native": 4178.799805,
+   "usd_oz": 4185.899902,
+   "native": 4185.899902,
    "unit": "USD/oz",
-   "ts": "2026-09-29T22:45:41+00:00",
+   "ts": "2026-09-30T00:00:41+00:00",
    "change_pct": null,
    "venue": "SPOT",
    "note": "live spot"
@@ -45,10 +45,10 @@
    "fx_cny": 6.6987
   },
   "LBMA_PM": {
-   "usd_oz": 4144.55,
-   "native": 4144.55,
+   "usd_oz": 4163.4,
+   "native": 4163.4,
    "unit": "USD/oz",
-   "ts": "2026-09-28T15:00:00+00:00",
+   "ts": "2026-09-29T15:00:00+00:00",
    "change_pct": null,
    "venue": "LBMA_PM",
    "note": "London PM auction"
@@ -62,7 +62,7 @@
    "unit": "CNY",
    "currency": "CNY",
    "ts": "2026-09-29T07:00:01+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006126+00:00",
+   "fetched_at": "2026-09-30T00:00:59.200644+00:00",
    "volume": 377557858,
    "open_interest": null,
    "change_pct": -3.837904955412573,
@@ -77,10 +77,10 @@
    "unit": "JPY",
    "currency": "JPY",
    "ts": "2026-09-29T06:30:00+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006240+00:00",
+   "fetched_at": "2026-09-30T00:00:59.200768+00:00",
    "volume": 433289,
    "open_interest": null,
-   "change_pct": -5.308880308880308,
+   "change_pct": -3.6818851251840945,
    "source": "Yahoo Finance -> Tokyo Stock Exchange",
    "delay_note": "delayed (~20 min)",
    "usd_per_oz": null
@@ -92,7 +92,7 @@
    "unit": "HKD",
    "currency": "HKD",
    "ts": "2026-09-29T08:08:03+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006323+00:00",
+   "fetched_at": "2026-09-30T00:00:59.200856+00:00",
    "volume": 55498,
    "open_interest": null,
    "change_pct": -3.9329464861379755,
@@ -107,7 +107,7 @@
    "unit": "INR",
    "currency": "INR",
    "ts": "2026-09-29T10:00:00+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006404+00:00",
+   "fetched_at": "2026-09-30T00:00:59.200937+00:00",
    "volume": 28605212,
    "open_interest": null,
    "change_pct": -3.2790828188888024,
@@ -122,7 +122,7 @@
    "unit": "USD",
    "currency": "USD",
    "ts": "2026-09-29T20:00:00+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006475+00:00",
+   "fetched_at": "2026-09-30T00:00:59.201012+00:00",
    "volume": 7901795,
    "open_interest": null,
    "change_pct": -4.294248506511362,
@@ -137,7 +137,7 @@
    "unit": "USD",
    "currency": "USD",
    "ts": "2026-09-29T20:00:00+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006540+00:00",
+   "fetched_at": "2026-09-30T00:00:59.201092+00:00",
    "volume": 3552884,
    "open_interest": null,
    "change_pct": -4.278922345483366,
@@ -152,7 +152,7 @@
    "unit": "USD",
    "currency": "USD",
    "ts": "2026-09-29T20:00:00+00:00",
-   "fetched_at": "2026-09-29T22:46:02.006613+00:00",
+   "fetched_at": "2026-09-30T00:00:59.201193+00:00",
    "volume": 5956900,
    "open_interest": null,
    "change_pct": -4.274296304876633,
@@ -162,14 +162,14 @@
   }
  ],
  "dispersion": {
-  "high_venue": "COMEX_MICRO",
-  "high": 4210.3,
+  "high_venue": "COMEX",
+  "high": 4216.5,
   "low_venue": "SGE",
   "low": 4167.421071596578,
-  "spread_usd": 42.878928403421924,
-  "spread_pct": 1.0229654373501935,
-  "mid": 4191.630219149145,
-  "lbma_pm": 4144.55,
+  "spread_usd": 49.07892840342174,
+  "spread_pct": 1.1695051192431958,
+  "mid": 4196.555243399144,
+  "lbma_pm": 4163.4,
   "live_venues": [
    "COMEX",
    "COMEX_MICRO",
@@ -177,19 +177,19 @@
    "SPOT"
   ],
   "venues": {
-   "COMEX": 4210.0,
-   "COMEX_MICRO": 4210.3,
-   "SPOT": 4178.8,
+   "COMEX": 4216.5,
+   "COMEX_MICRO": 4216.4,
+   "SPOT": 4185.9,
    "SGE": 4167.42
   }
  },
  "premium": {
-  "premium_usd": 23.02110197371985,
-  "premium_pct": 0.5554749052630019,
-  "sge_usd_oz": 4167.4211019737195,
-  "reference": "LBMA AM (prior day)",
+  "premium_usd": 31.391148677839738,
+  "premium_pct": 0.7574353025248466,
+  "sge_usd_oz": 4175.791148677839,
+  "reference": "LBMA AM",
   "reference_usd_oz": 4144.4,
-  "as_of": "2026-09-29",
+  "as_of": "2026-09-28",
   "matched": true
  },
  "etf": {
@@ -212,7 +212,7 @@
   "flow_52w": 427.23717423
  },
  "index": {
-  "score": 50.101206423359436,
+  "score": 51.317861180743876,
   "label": "Neutral / two-way",
   "components": [
    {
@@ -246,23 +246,23 @@
    {
     "name": "Shanghai physical premium",
     "weight": 0.1,
-    "raw": 23.02110197371985,
-    "value": 0.7673700657906617,
-    "detail": "+23.0 USD/oz vs London"
+    "raw": 31.391148677839738,
+    "value": 1.0,
+    "detail": "+31.4 USD/oz vs London"
    },
    {
     "name": "Tape imbalance (large prints)",
     "weight": 0.15,
-    "raw": 0.5890255868367424,
-    "value": 0.17805117367348489,
+    "raw": 0.5925925925925926,
+    "value": 0.18518518518518512,
     "detail": "59% of flagged volume on the bid"
    }
   ]
  },
  "tape": {
   "symbol": "GC=F",
-  "typical_volume": 75.0,
-  "session_volume": 122239.0,
+  "typical_volume": 71.0,
+  "session_volume": 123802.0,
   "spikes": [
    {
     "ts": "2026-09-29T18:00:00+00:00",
@@ -353,8 +353,8 @@
     "direction": "buy"
    }
   ],
-  "flagged_count": 60,
-  "buy_ratio": 0.5890255868367424
+  "flagged_count": 63,
+  "buy_ratio": 0.5925925925925926
  },
  "positions_date": "2026-09-22",
  "errors": {}

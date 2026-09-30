@@ -13,6 +13,18 @@ from . import config
 
 LEVELS = {"INFO": 0, "NOTABLE": 1, "CRITICAL": 2}
 
+# An EVENT alert reports something that happened once — a single large print, a
+# swing between two specific weekly reports. Re-raising it can never add
+# information, so its window is effectively "never again".
+EVENT_COOLDOWN_S = 24 * 3600
+# A STATE alert reports a condition that is still true — a wide premium, a stale
+# print, a one-sided tape. Re-raising it is useful, but two traps make it flood
+# the panel. A short window just re-fires the same unchanged line as soon as it
+# expires; and any rule whose message embeds a value that drifts ("15.6h old", a
+# live premium) never matches its own previous key, so it re-fires on *every*
+# evaluation. State rules therefore dedupe on the code alone and remind hourly.
+STATE_COOLDOWN_S = 3600
+
 
 @dataclass
 class Alert:
@@ -21,6 +33,15 @@ class Alert:
     message: str
     detail: dict = field(default_factory=dict)
     ts: dt.datetime = field(default_factory=lambda: dt.datetime.now(dt.timezone.utc))
+    # Identity used for de-duplication. Empty means "code|message", which is the
+    # correct key for a one-off event. A state rule passes a stable key, because
+    # its message embeds a drifting value and would otherwise never match.
+    key: str = ""
+    # Seconds before this alert may be raised again; None uses the engine default.
+    cooldown: float | None = None
+
+    def dedupe_key(self) -> str:
+        return self.key or f"{self.code}|{self.message}"
 
     def __str__(self) -> str:
         return f"[{self.level:8s}] {self.message}"
@@ -43,14 +64,16 @@ def from_positions(pos: dict | None) -> list[Alert]:
                 level="CRITICAL",
                 message=(f"{g['label']} positioning is {direction}: net {g['net']:+,} ct, "
                          f"z={z:+.2f} ({pct:.0f}th percentile of 3y)"),
-                detail={"group": key, "net": g["net"], "z": z, "percentile": pct}))
+                detail={"group": key, "net": g["net"], "z": z, "percentile": pct},
+                key=f"cot_extreme_{key}", cooldown=STATE_COOLDOWN_S))
         elif abs(z) >= th["cot_zscore_notable"]:
             out.append(Alert(
                 code=f"cot_notable_{key}",
                 level="NOTABLE",
                 message=(f"{g['label']} net {g['net']:+,} ct, z={z:+.2f} "
                          f"({pct:.0f}th pct of 3y)"),
-                detail={"group": key, "net": g["net"], "z": z}))
+                detail={"group": key, "net": g["net"], "z": z},
+                key=f"cot_notable_{key}", cooldown=STATE_COOLDOWN_S))
 
         cw = g.get("change_pct")
         if cw is not None and abs(cw) >= th["cot_weekly_change_pct"]:
@@ -59,7 +82,8 @@ def from_positions(pos: dict | None) -> list[Alert]:
                 level="NOTABLE",
                 message=(f"{g['label']} swung {g['change']:+,} ct week-over-week "
                          f"({cw:+.1f}%)"),
-                detail={"group": key, "change": g["change"], "change_pct": cw}))
+                detail={"group": key, "change": g["change"], "change_pct": cw},
+                cooldown=EVENT_COOLDOWN_S))
 
     conc = pos.get("concentration") or {}
     g4s = conc.get("gross_4_short")
@@ -69,7 +93,8 @@ def from_positions(pos: dict | None) -> list[Alert]:
             level="NOTABLE",
             message=(f"Big-player concentration high: the 4 largest shorts hold "
                      f"{g4s:.1f}% of open interest"),
-            detail={"gross_4_short": g4s}))
+            detail={"gross_4_short": g4s},
+            key="cot_concentration", cooldown=STATE_COOLDOWN_S))
 
     oi, oic = pos.get("open_interest"), pos.get("open_interest_change")
     if oi and oic is not None and abs(oic) / oi >= 0.03:
@@ -77,7 +102,8 @@ def from_positions(pos: dict | None) -> list[Alert]:
             code="oi_swing",
             level="NOTABLE",
             message=f"Open interest moved {oic:+,} ct week-over-week ({oic/oi*100:+.1f}%)",
-            detail={"open_interest": oi, "change": oic}))
+            detail={"open_interest": oi, "change": oic},
+            cooldown=EVENT_COOLDOWN_S))
     return out
 
 
@@ -92,13 +118,13 @@ def from_premium(prem: dict | None) -> list[Alert]:
             code="sge_premium_wide", level="CRITICAL",
             message=(f"Shanghai bidding up hard: SGE {p:+.1f} USD/oz over London "
                      f"({prem['premium_pct']:+.2f}%) — Asian physical demand"),
-            detail=prem))
+            detail=prem, key="sge_premium_wide", cooldown=STATE_COOLDOWN_S))
     elif p <= th["sge_discount_wide_usd"]:
         out.append(Alert(
             code="sge_discount_wide", level="NOTABLE",
             message=(f"SGE {p:+.1f} USD/oz vs London — Chinese sellers, "
                      f"western bid stronger"),
-            detail=prem))
+            detail=prem, key="sge_discount_wide", cooldown=STATE_COOLDOWN_S))
     return out
 
 
@@ -115,7 +141,8 @@ def from_flow(etf: dict | None) -> list[Alert]:
             level="NOTABLE",
             message=(f"Gold ETFs {verb} {abs(wow):.1f} t in the week to "
                      f"{etf['as_of']} (total {etf['total_tonnes']:,.0f} t)"),
-            detail={"wow_tonnes": wow, "total": etf["total_tonnes"]}))
+            detail={"wow_tonnes": wow, "total": etf["total_tonnes"]},
+            cooldown=EVENT_COOLDOWN_S))
 
     p = etf.get("flow_percentile")
     if p is not None and (p >= 97 or p <= 3):
@@ -123,7 +150,8 @@ def from_flow(etf: dict | None) -> list[Alert]:
             code="etf_flow_extreme", level="CRITICAL",
             message=(f"ETF weekly flow is a 52-week extreme: {wow:+.1f} t "
                      f"({p:.0f}th percentile)"),
-            detail={"wow_tonnes": wow, "percentile": p}))
+            detail={"wow_tonnes": wow, "percentile": p},
+            cooldown=EVENT_COOLDOWN_S))
     return out
 
 
@@ -141,7 +169,8 @@ def from_tape(tape_d: dict | None) -> list[Alert]:
                      f"{s['volume']:,.0f} lots ({s.get('volume_multiple') or 0:.1f}x typical), "
                      f"{s['move']:+.1f} USD ({s['direction']})"),
             detail={"ts": s["ts"].isoformat(), "volume": s["volume"],
-                    "z": s["volume_z"], "direction": s["direction"]}))
+                    "z": s["volume_z"], "direction": s["direction"]},
+            cooldown=EVENT_COOLDOWN_S))
 
     br = tape_d.get("buy_ratio")
     if br is not None and (br >= 0.75 or br <= 0.25):
@@ -150,7 +179,8 @@ def from_tape(tape_d: dict | None) -> list[Alert]:
             code="tape_imbalance", level="NOTABLE",
             message=(f"Tape is one-sided: {br*100:.0f}% of flagged volume was "
                      f"{side} ({tape_d['flagged_count']} anomalies)"),
-            detail={"buy_ratio": br, "flagged": tape_d["flagged_count"]}))
+            detail={"buy_ratio": br, "flagged": tape_d["flagged_count"]},
+            key="tape_imbalance", cooldown=STATE_COOLDOWN_S))
     return out
 
 
@@ -169,7 +199,8 @@ def from_basis(bullion: dict | None) -> list[Alert]:
                 message=(f"COMEX basis {basis:+.1f} USD/oz over spot — "
                          f"{'wide contango' if basis > 0 else 'backwardation'}, "
                          f"watch for squeeze conditions"),
-                detail={"basis_usd": basis, "comex": c, "spot": s}))
+                detail={"basis_usd": basis, "comex": c, "spot": s},
+                key="efp_basis_wide", cooldown=STATE_COOLDOWN_S))
     return out
 
 
